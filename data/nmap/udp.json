@@ -1,0 +1,22 @@
+{
+    "53": {
+        "name": "domain",
+        "version": "Unbound"
+    },
+    "67": {
+        "name": "dhcps",
+        "version": "unknown"
+    },
+    "69": {
+        "name": "tftp",
+        "version": "Windows 10 IoT tftpd"
+    },
+    "1900": {
+        "name": "upnp?",
+        "version": "unknown"
+    },
+    "5351": {
+        "name": "nat-pmp?",
+        "version": "unknown"
+    }
+}

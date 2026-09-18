@@ -1,0 +1,11 @@
+{
+    "target IP": "192.168.0.1",
+    "vendor": "",
+    "discovered_services": {
+        "tcp": {},
+        "udp": {}
+    },
+    "mapped_cves": [],
+    "tried_exploits": [],
+    "recon_completed": false
+}

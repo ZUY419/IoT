@@ -1,0 +1,24 @@
+{
+  "target": "192.168.0.1",
+  "services": [],
+  "cves": [],
+  "executed_actions": [
+    {
+      "action": "finish_assessment",
+      "arguments": {},
+      "reason": "Agent decision failed; stopping safely."
+    }
+  ],
+  "decisions": [
+    {
+      "error": "arguments must be an object",
+      "fallback": "finish_assessment"
+    },
+    {
+      "action": "finish_assessment",
+      "arguments": {},
+      "reason": "Agent decision failed; stopping safely."
+    }
+  ],
+  "started_at": 1789642673.1114266
+}
