@@ -1,0 +1,319 @@
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:05:33", "label": "Nothing", "message": "______   _                ___"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:05:33", "label": "Nothing", "message": "|  ___| (_)              / _ \\"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:05:33", "label": "Nothing", "message": "| |_     _   _ __ ___   / /_\\ \\  _ __    ___"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:05:33", "label": "Nothing", "message": "|  _|   | | | '_ ` _ \\  |  _  | | '_ \\  / __| ++"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:05:33", "label": "Nothing", "message": "| |     | | | | | | | | | | | | | | | | \\__ \\"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:05:33", "label": "Nothing", "message": "\\_|     |_| |_| |_| |_| \\_| |_/ |_| |_| |___/"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:05:33", "label": "Nothing", "message": "Welcome to the Firmware Analysis Plus - v2.3.1"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:05:33", "label": "Nothing", "message": "By lys - https://github.com/liyansong2018/firmware-analysis-plus"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:05:33", "label": "Nothing", "message": "[+] Firmware: dir601_revB_FW_201.bin"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:05:33", "label": "Nothing", "message": "[+] Extracting the firmware..."}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:05:37", "label": "Nothing", "message": "[+] Image ID: 1"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:05:37", "label": "Nothing", "message": "[+] Identifying architecture..."}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:05:37", "label": "Nothing", "message": "[+] Architecture: mipseb"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:05:38", "label": "Nothing", "message": "[+] Building QEMU disk image..."}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:05:40", "label": "Nothing", "message": "[+] Setting up the network connection, please standby..."}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:41", "label": "Nothing", "message": "[+] Network interfaces: [('br0', '192.168.0.1')]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:41", "label": "Network", "message": "http://192.168.0.1"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:41", "label": "Nothing", "message": "[+] Using qemu-system-mips from /home/todoroki/IoT_Project/Firmware/Firmware_tool/firmware-analysis-plus/qemu-builds/2.5.0"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:41", "label": "Nothing", "message": "[+] All set! Press ENTER to run the firmware..."}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:43", "label": "Nothing", "message": "[+] When running, press Ctrl + A X to terminate qemu"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:44", "label": "Nothing", "message": "[+] Command line: /home/todoroki/IoT_Project/Firmware/Firmware_tool/firmware-analysis-plus/firmadyne/scratch/1/run.sh"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:44", "label": "Nothing", "message": "[sudo] password for todoroki:"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:45", "label": "Nothing", "message": "Creating TAP device tap1_0..."}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:45", "label": "Nothing", "message": "Set 'tap1_0' persistent and owned by uid 0"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:46", "label": "Nothing", "message": "Bringing up TAP device..."}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:46", "label": "Nothing", "message": "Adding route to 192.168.0.1..."}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:47", "label": "Nothing", "message": "Starting firmware emulation... use Ctrl-a + x to exit"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:47", "label": "Nothing", "message": "[    0.000000] Linux version 2.6.39.4+ (ddcc@ddcc-virtual) (gcc version 5.3.0 (GCC) ) #2 Tue Sep 1 18:08:53 EDT 2020"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:48", "label": "Nothing", "message": "[    0.000000] bootconsole [early0] enabled"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:48", "label": "Nothing", "message": "[    0.000000] CPU revision is: 00019300 (MIPS 24Kc)"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:48", "label": "Nothing", "message": "[    0.000000] FPU revision is: 00739300"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:49", "label": "Nothing", "message": "[    0.000000] Determined physical RAM map:"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:49", "label": "Nothing", "message": "[    0.000000]  memory: 00001000 @ 00000000 (reserved)"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:50", "label": "Nothing", "message": "[    0.000000]  memory: 000ef000 @ 00001000 (ROM data)"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:50", "label": "Nothing", "message": "[    0.000000]  memory: 00678000 @ 000f0000 (reserved)"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:51", "label": "Nothing", "message": "[    0.000000]  memory: 0f897000 @ 00768000 (usable)"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:51", "label": "Nothing", "message": "[    0.000000] debug: ignoring loglevel setting."}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:52", "label": "Nothing", "message": "[    0.000000] Wasting 60672 bytes for tracking 1896 unused pages"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:52", "label": "Nothing", "message": "[    0.000000] Initrd not found or empty - disabling initrd"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:53", "label": "Nothing", "message": "[    0.000000] Zone PFN ranges:"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:53", "label": "Nothing", "message": "[    0.000000]   DMA      0x00000000 -> 0x00001000"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:54", "label": "Nothing", "message": "[    0.000000]   Normal   0x00001000 -> 0x0000ffff"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:54", "label": "Nothing", "message": "[    0.000000] Movable zone start PFN for each node"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:54", "label": "Nothing", "message": "[    0.000000] early_node_map[1] active PFN ranges"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:55", "label": "Nothing", "message": "[    0.000000]     0: 0x00000000 -> 0x0000ffff"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:55", "label": "Nothing", "message": "[    0.000000] On node 0 totalpages: 65535"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:56", "label": "Nothing", "message": "[    0.000000] free_area_init_node: node 0, pgdat 80702800, node_mem_map 81000000"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:56", "label": "Nothing", "message": "[    0.000000]   DMA zone: 32 pages used for memmap"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.000000]   DMA zone: 0 pages reserved"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.000000]   DMA zone: 4064 pages, LIFO batch:0"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.000000]   Normal zone: 480 pages used for memmap"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.000000]   Normal zone: 60959 pages, LIFO batch:15"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.000000] pcpu-alloc: s0 r0 d32768 u32768 alloc=1*32768"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.000000] pcpu-alloc: [0] 0"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.000000] Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 65023"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.000000] Kernel command line: root=/dev/sda1 console=ttyS0 nandsim.parts=64,64,64,64,64,64,64,64,64,64 rdinit=/firmadyne/preInit.sh rw debug ignore_loglevel print-fatal-signals=1 user_debug=31 firmadyne.syscall=0"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.000000] PID hash table entries: 1024 (order: 0, 4096 bytes)"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.000000] Dentry cache hash table entries: 32768 (order: 5, 131072 bytes)"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.000000] Inode-cache hash table entries: 16384 (order: 4, 65536 bytes)"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.000000] Primary instruction cache 2kB, VIPT, 2-way, linesize 16 bytes."}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.000000] Primary data cache 2kB, 2-way, VIPT, no aliases, linesize 16 bytes"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.000000] Writing ErrCtl register=00000000"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.000000] Readback ErrCtl register=00000000"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.000000] Memory: 252264k/254556k available (4554k kernel code, 2292k reserved, 1609k data, 240k init, 0k highmem)"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.000000] NR_IRQS:256"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.000000] CPU frequency 200.00 MHz"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.000000] Console: colour dummy device 80x25"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.000000] Calibrating delay loop... 1988.60 BogoMIPS (lpj=3977216)"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.032000] pid_max: default: 32768 minimum: 301"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.032000] Mount-cache hash table entries: 512"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.036000] Performance counters: No available PMU."}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.040000] NET: Registered protocol family 16"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.048000] bio: create slab <bio-0> at 0"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.048000] vgaarb: loaded"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.048000] SCSI subsystem initialized"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.048000] libata version 3.00 loaded."}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.052000] usbcore: registered new interface driver usbfs"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.052000] usbcore: registered new interface driver hub"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.052000] usbcore: registered new device driver usb"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.052000] pci 0000:00:00.0: [11ab:4620] type 0 class 0x000600"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.052000] pci 0000:00:00.0: reg 14: [mem 0x01000000-0x01ffffff pref]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.052000] pci 0000:00:0a.0: [8086:7110] type 0 class 0x000601"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.056000] pci 0000:00:0a.1: [8086:7111] type 0 class 0x000101"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.056000] pci 0000:00:0a.1: reg 20: [io  0x0000-0x000f]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.056000] pci 0000:00:0a.2: [8086:7112] type 0 class 0x000c03"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.056000] pci 0000:00:0a.2: reg 20: [io  0x0000-0x001f]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.056000] pci 0000:00:0a.3: [8086:7113] type 0 class 0x000680"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.056000] pci 0000:00:0a.3: address space collision: [io  0x1100-0x110f] conflicts with GT-64120 PCI I/O [io  0x1000-0x1fffff]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.056000] pci 0000:00:0b.0: [1022:2000] type 0 class 0x000200"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.056000] pci 0000:00:0b.0: reg 10: [io  0x0000-0x001f]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.056000] pci 0000:00:0b.0: reg 14: [mem 0x00000000-0x0000001f]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.056000] pci 0000:00:0b.0: reg 30: [mem 0x00000000-0x0003ffff pref]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.056000] pci 0000:00:12.0: [1022:2000] type 0 class 0x000200"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.056000] pci 0000:00:12.0: reg 10: [io  0x0000-0x001f]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.056000] pci 0000:00:12.0: reg 14: [mem 0x00000000-0x0000001f]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.060000] pci 0000:00:12.0: reg 30: [mem 0x00000000-0x0003ffff pref]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.060000] pci 0000:00:13.0: [1022:2000] type 0 class 0x000200"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.060000] pci 0000:00:13.0: reg 10: [io  0x0000-0x001f]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.060000] pci 0000:00:13.0: reg 14: [mem 0x00000000-0x0000001f]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.060000] pci 0000:00:13.0: reg 30: [mem 0x00000000-0x0003ffff pref]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.060000] pci 0000:00:14.0: [1022:2000] type 0 class 0x000200"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.060000] pci 0000:00:14.0: reg 10: [io  0x0000-0x001f]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.060000] pci 0000:00:14.0: reg 14: [mem 0x00000000-0x0000001f]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.060000] pci 0000:00:14.0: reg 30: [mem 0x00000000-0x0003ffff pref]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.060000] pci 0000:00:15.0: [1013:00b8] type 0 class 0x000300"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.060000] pci 0000:00:15.0: reg 10: [mem 0x00000000-0x01ffffff pref]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.060000] pci 0000:00:15.0: reg 14: [mem 0x00000000-0x00000fff]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.060000] pci 0000:00:15.0: reg 30: [mem 0x00000000-0x0000ffff pref]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.064000] vgaarb: device added: PCI:0000:00:15.0,decodes=io+mem,owns=none,locks=none"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.064000] pci 0000:00:0a.3: BAR 8: [io  0x1100-0x110f] has bogus alignment"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.064000] pci 0000:00:15.0: BAR 0: assigned [mem 0x10000000-0x11ffffff pref]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.064000] pci 0000:00:15.0: BAR 0: set to [mem 0x10000000-0x11ffffff pref] (PCI address [0x10000000-0x11ffffff])"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.064000] pci 0000:00:0b.0: BAR 6: assigned [mem 0x12000000-0x1203ffff pref]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.064000] pci 0000:00:12.0: BAR 6: assigned [mem 0x12040000-0x1207ffff pref]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.064000] pci 0000:00:13.0: BAR 6: assigned [mem 0x12080000-0x120bffff pref]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.064000] pci 0000:00:14.0: BAR 6: assigned [mem 0x120c0000-0x120fffff pref]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.064000] pci 0000:00:15.0: BAR 6: assigned [mem 0x12100000-0x1210ffff pref]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.064000] pci 0000:00:15.0: BAR 1: assigned [mem 0x12110000-0x12110fff]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.064000] pci 0000:00:15.0: BAR 1: set to [mem 0x12110000-0x12110fff] (PCI address [0x12110000-0x12110fff])"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.068000] pci 0000:00:0a.2: BAR 4: assigned [io  0x1000-0x101f]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.068000] pci 0000:00:0a.2: BAR 4: set to [io  0x1000-0x101f] (PCI address [0x1000-0x101f])"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.068000] pci 0000:00:0b.0: BAR 0: assigned [io  0x1020-0x103f]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.068000] pci 0000:00:0b.0: BAR 0: set to [io  0x1020-0x103f] (PCI address [0x1020-0x103f])"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.068000] pci 0000:00:0b.0: BAR 1: assigned [mem 0x12111000-0x1211101f]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.068000] pci 0000:00:0b.0: BAR 1: set to [mem 0x12111000-0x1211101f] (PCI address [0x12111000-0x1211101f])"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.068000] pci 0000:00:12.0: BAR 0: assigned [io  0x1040-0x105f]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.068000] pci 0000:00:12.0: BAR 0: set to [io  0x1040-0x105f] (PCI address [0x1040-0x105f])"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.068000] pci 0000:00:12.0: BAR 1: assigned [mem 0x12111020-0x1211103f]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.068000] pci 0000:00:12.0: BAR 1: set to [mem 0x12111020-0x1211103f] (PCI address [0x12111020-0x1211103f])"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.068000] pci 0000:00:13.0: BAR 0: assigned [io  0x1060-0x107f]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.068000] pci 0000:00:13.0: BAR 0: set to [io  0x1060-0x107f] (PCI address [0x1060-0x107f])"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.072000] pci 0000:00:13.0: BAR 1: assigned [mem 0x12111040-0x1211105f]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.072000] pci 0000:00:13.0: BAR 1: set to [mem 0x12111040-0x1211105f] (PCI address [0x12111040-0x1211105f])"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.072000] pci 0000:00:14.0: BAR 0: assigned [io  0x1080-0x109f]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.072000] pci 0000:00:14.0: BAR 0: set to [io  0x1080-0x109f] (PCI address [0x1080-0x109f])"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.072000] pci 0000:00:14.0: BAR 1: assigned [mem 0x12111060-0x1211107f]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.072000] pci 0000:00:14.0: BAR 1: set to [mem 0x12111060-0x1211107f] (PCI address [0x12111060-0x1211107f])"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.072000] pci 0000:00:0a.1: BAR 4: assigned [io  0x10a0-0x10af]"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.072000] pci 0000:00:0a.1: BAR 4: set to [io  0x10a0-0x10af] (PCI address [0x10a0-0x10af])"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.076000] cfg80211: Calling CRDA to update world regulatory domain"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.076000] Switching to clocksource MIPS"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.080000] Switched to NOHz mode on CPU #0"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.080000] NET: Registered protocol family 2"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.080000] IP route cache hash table entries: 2048 (order: 1, 8192 bytes)"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.080000] TCP established hash table entries: 8192 (order: 4, 65536 bytes)"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.080000] TCP bind hash table entries: 8192 (order: 3, 32768 bytes)"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.080000] TCP: Hash tables configured (established 8192 bind 8192)"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.084000] TCP reno registered"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.084000] UDP hash table entries: 256 (order: 0, 4096 bytes)"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.084000] UDP-Lite hash table entries: 256 (order: 0, 4096 bytes)"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.084000] NET: Registered protocol family 1"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.084000] PCI: CLS 0 bytes, default 64"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.144000] squashfs: version 4.0 (2009/01/31) Phillip Lougher"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.144000] Registering unionfs 2.6 (for 2.6.39.4)"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.144000] JFFS2 version 2.2. (NAND) © 2001-2006 Red Hat, Inc."}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.144000] ROMFS MTD (C) 2007 Red Hat, Inc."}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.144000] msgmni has been set to 492"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.148000] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 253)"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.148000] io scheduler noop registered"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.148000] io scheduler cfq registered (default)"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.148000] firmadyne: devfs: 1, execute: 1, procfs: 1, syscall: 0"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.148000] firmadyne: Cannot register character device: watchdog, 0xa, 0x82!"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.148000] firmadyne: Cannot register character device: wdt, 0xfd, 0x0!"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.184000] PCI: Enabling device 0000:00:15.0 (0000 -> 0002)"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.184000] cirrusfb 0000:00:15.0: Cirrus Logic chipset on PCI bus, RAM (4096 kB) at 0x10000000"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.424000] Console: switching to colour frame buffer device 80x30"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.440000] Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.468000] serial8250.0: ttyS0 at I/O 0x3f8 (irq = 4) is a 16550A"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.468000] console [ttyS0] enabled, bootconsole disabled"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.468000] console [ttyS0] enabled, bootconsole disabled"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.492000] serial8250.0: ttyS1 at I/O 0x2f8 (irq = 3) is a 16550A"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.496000] brd: module loaded"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.500000] loop: module loaded"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.500000] ata_piix 0000:00:0a.1: version 2.13"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.500000] PCI: Enabling device 0000:00:0a.1 (0000 -> 0001)"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.500000] PCI: Setting latency timer of device 0000:00:0a.1 to 64"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.504000] scsi0 : ata_piix"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.508000] scsi1 : ata_piix"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.508000] ata1: PATA max UDMA/33 cmd 0x1f0 ctl 0x3f6 bmdma 0x10a0 irq 14"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.508000] ata2: PATA max UDMA/33 cmd 0x170 ctl 0x376 bmdma 0x10a8 irq 15"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Waring", "message": "[    0.508000] [nandsim] warning: read_byte: unexpected data output cycle, state is STATE_READY return 0x0"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Waring", "message": "[    0.508000] [nandsim] warning: read_byte: unexpected data output cycle, state is STATE_READY return 0x0"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Waring", "message": "[    0.512000] [nandsim] warning: read_byte: unexpected data output cycle, state is STATE_READY return 0x0"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Waring", "message": "[    0.512000] [nandsim] warning: read_byte: unexpected data output cycle, state is STATE_READY return 0x0"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Waring", "message": "[    0.512000] [nandsim] warning: read_byte: unexpected data output cycle, state is STATE_READY return 0x0"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Waring", "message": "[    0.512000] [nandsim] warning: read_byte: unexpected data output cycle, state is STATE_READY return 0x0"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.512000] NAND device: Manufacturer ID: 0x98, Chip ID: 0x39 (Toshiba NAND 128MiB 1,8V 8-bit)"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.512000] flash size: 128 MiB"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.512000] page size: 512 bytes"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.512000] OOB area size: 16 bytes"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.512000] sector size: 16 KiB"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.512000] pages number: 262144"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.512000] pages per sector: 32"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.516000] bus width: 8"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.516000] bits in sector size: 14"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.516000] bits in page size: 9"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.516000] bits in OOB size: 4"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.516000] flash size with OOB: 135168 KiB"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.516000] page address bytes: 4"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.516000] sector address bytes: 3"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.516000] options: 0x62"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.516000] Scanning device for bad blocks"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.576000] Creating 11 MTD partitions on \"NAND 128MiB 1,8V 8-bit\":"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.580000] 0x000000000000-0x000000100000 : \"NAND simulator partition 0\""}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.584000] 0x000000100000-0x000000200000 : \"NAND simulator partition 1\""}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.588000] 0x000000200000-0x000000300000 : \"NAND simulator partition 2\""}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.588000] 0x000000300000-0x000000400000 : \"NAND simulator partition 3\""}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.592000] 0x000000400000-0x000000500000 : \"NAND simulator partition 4\""}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.592000] 0x000000500000-0x000000600000 : \"NAND simulator partition 5\""}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.592000] 0x000000600000-0x000000700000 : \"NAND simulator partition 6\""}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.592000] 0x000000700000-0x000000800000 : \"NAND simulator partition 7\""}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.596000] 0x000000800000-0x000000900000 : \"NAND simulator partition 8\""}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.596000] 0x000000900000-0x000000a00000 : \"NAND simulator partition 9\""}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.596000] 0x000000a00000-0x000008000000 : \"NAND simulator partition 10\""}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.600000] e1000: Intel(R) PRO/1000 Network Driver - version 7.3.21-k8-NAPI"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.600000] e1000: Copyright (c) 1999-2006 Intel Corporation."}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.600000] e1000e: Intel(R) PRO/1000 Network Driver - 1.3.10-k2"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.600000] e1000e: Copyright(c) 1999 - 2011 Intel Corporation."}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.600000] pcnet32: pcnet32.c:v1.35 21.Apr.2008 tsbogend@alpha.franken.de"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.600000] PCI: Enabling device 0000:00:0b.0 (0000 -> 0003)"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.604000] PCI: Setting latency timer of device 0000:00:0b.0 to 64"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.604000] pcnet32: PCnet/PCI II 79C970A at 0x1020, 52:54:00:12:34:56 assigned IRQ 10"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.608000] pcnet32: eth0: registered as PCnet/PCI II 79C970A"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.608000] PCI: Enabling device 0000:00:12.0 (0000 -> 0003)"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.608000] PCI: Setting latency timer of device 0000:00:12.0 to 64"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.608000] pcnet32: PCnet/PCI II 79C970A at 0x1040, 52:54:00:12:34:57 assigned IRQ 10"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.612000] pcnet32: eth1: registered as PCnet/PCI II 79C970A"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.612000] PCI: Enabling device 0000:00:13.0 (0000 -> 0003)"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.612000] PCI: Setting latency timer of device 0000:00:13.0 to 64"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.612000] pcnet32: PCnet/PCI II 79C970A at 0x1060, 52:54:00:12:34:58 assigned IRQ 10"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.616000] pcnet32: eth2: registered as PCnet/PCI II 79C970A"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.616000] PCI: Enabling device 0000:00:14.0 (0000 -> 0003)"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.616000] PCI: Setting latency timer of device 0000:00:14.0 to 64"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.616000] pcnet32: PCnet/PCI II 79C970A at 0x1080, 52:54:00:12:34:59 assigned IRQ 11"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.620000] pcnet32: eth3: registered as PCnet/PCI II 79C970A"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.620000] pcnet32: 4 cards_found"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.620000] PPP generic driver version 2.4.2"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.620000] PPP Deflate Compression module registered"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.624000] PPP MPPE Compression module registered"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.628000] NET: Registered protocol family 24"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.628000] tun: Universal TUN/TAP device driver, 1.6"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.628000] tun: (C) 1999-2004 Max Krasnyansky <maxk@qualcomm.com>"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.628000] ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.628000] ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.628000] uhci_hcd: USB Universal Host Controller Interface driver"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.628000] PCI: Enabling device 0000:00:0a.2 (0000 -> 0001)"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.632000] PCI: Setting latency timer of device 0000:00:0a.2 to 64"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.632000] uhci_hcd 0000:00:0a.2: UHCI Host Controller"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.632000] uhci_hcd 0000:00:0a.2: new USB bus registered, assigned bus number 1"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.632000] uhci_hcd 0000:00:0a.2: irq 11, io base 0x00001000"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.636000] hub 1-0:1.0: USB hub found"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.636000] hub 1-0:1.0: 2 ports detected"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.636000] Initializing USB Mass Storage driver..."}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.636000] usbcore: registered new interface driver usb-storage"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.636000] USB Mass Storage support registered."}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.640000] serio: i8042 KBD port at 0x60,0x64 irq 1"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.640000] serio: i8042 AUX port at 0x60,0x64 irq 12"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.640000] mousedev: PS/2 mouse device common for all mice"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.644000] rtc_cmos rtc_cmos: rtc core: registered rtc_cmos as rtc0"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.644000] rtc0: alarms up to one day, 242 bytes nvram"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.644000] i2c /dev entries driver"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.644000] piix4_smbus 0000:00:0a.3: SMBus Host Controller at 0x1100, revision 0"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.644000] sdhci: Secure Digital Host Controller Interface driver"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.644000] sdhci: Copyright(c) Pierre Ossman"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.648000] usbcore: registered new interface driver usbhid"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.648000] usbhid: USB HID core driver"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.648000] Netfilter messages via NETLINK v0.30."}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.648000] nf_conntrack version 0.5.0 (3941 buckets, 15764 max)"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.648000] ctnetlink v0.93: registering with nfnetlink."}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.648000] IPv4 over IPv4 tunneling driver"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.652000] ip_tables: (C) 2000-2006 Netfilter Core Team"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.652000] arp_tables: (C) 2002 David S. Miller"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.652000] TCP cubic registered"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.652000] Initializing XFRM netlink socket"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.652000] NET: Registered protocol family 10"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:57", "label": "Nothing", "message": "[    0.656000] ip6_tables: (C) 2000-2006 Netfilter Core Team"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    0.660000] IPv6 over IPv4 tunneling driver"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    0.660000] NET: Registered protocol family 17"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    0.660000] Bridge firewalling registered"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    0.660000] Ebtables v2.0 registered"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    0.660000] 802.1Q VLAN Support v1.8 Ben Greear <greearb@candelatech.com>"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    0.660000] All bugs added by David S. Miller <davem@redhat.com>"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    0.660000] lib80211: common routines for IEEE802.11 drivers"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    0.660000] lib80211_crypt: registered algorithm 'NULL'"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    0.664000] rtc_cmos rtc_cmos: setting system clock to 2026-09-26 16:06:47 UTC (1790438807)"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    0.744000] input: AT Raw Set 2 keyboard as /devices/platform/i8042/serio0/input/input0"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    0.748000] ata1.01: NODEV after polling detection"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    0.748000] ata2.01: NODEV after polling detection"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    0.748000] ata2.00: ATAPI: QEMU DVD-ROM, 2.5+, max UDMA/100"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    0.748000] ata2.00: configured for UDMA/33"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    0.752000] ata1.00: ATA-7: QEMU HARDDISK, 2.5+, max UDMA/100"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    0.752000] ata1.00: 2097152 sectors, multi 16: LBA48"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    0.752000] ata1.00: configured for UDMA/33"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    0.756000] scsi 0:0:0:0: Direct-Access     ATA      QEMU HARDDISK    2.5+ PQ: 0 ANSI: 5"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    0.760000] scsi 1:0:0:0: CD-ROM            QEMU     QEMU DVD-ROM     2.5+ PQ: 0 ANSI: 5"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    0.764000] sd 0:0:0:0: [sda] 2097152 512-byte logical blocks: (1.07 GB/1.00 GiB)"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    0.764000] sd 0:0:0:0: [sda] Write Protect is off"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    0.764000] sd 0:0:0:0: [sda] Mode Sense: 00 3a 00 00"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    0.764000] sd 0:0:0:0: [sda] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    0.772000]  sda: sda1"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    0.776000] sd 0:0:0:0: [sda] Attached SCSI disk"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    0.944000] input: ImExPS/2 Generic Explorer Mouse as /devices/platform/i8042/serio1/input/input1"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Waring", "message": "[    0.968000] EXT2-fs (sda1): warning: mounting unchecked fs, running e2fsck is recommended"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    0.972000] VFS: Mounted root (ext2 filesystem) on device 8:1."}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    0.972000] Freeing prom memory: 956k freed"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    0.996000] Freeing unused kernel memory: 240k freed"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    1.056000] firmadyne: sys_reboot[PID: 54 (init)]: magic1:fee1dead, magic2:28121969, cmd:0"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "init started:  BusyBox v1.01 (2012.02.10-07:25+0000) multi-call binary"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    1.112000] firmadyne: do_execve: /firmadyne/console"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    1.112000] OFFSETS: offset of pid: 0xc4 offset of comm: 0x1a4"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "Please press Enter to activate this console. [    4.820000] pcnet32 0000:00:12.0: eth1: link up"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    4.852000] pcnet32 0000:00:0b.0: eth0: link up"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[    4.944000] device eth1 entered promiscuous mode"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[   10.108000] br0: port 1(eth1) entering forwarding state"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[   10.108000] br0: port 1(eth1) entering forwarding state"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:06:58", "label": "Nothing", "message": "[   11.108000] br0: port 1(eth1) entering forwarding state"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:07:02", "label": "Nothing", "message": "[   15.224000] eth1: no IPv6 routers present"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:07:02", "label": "Nothing", "message": "[   15.760000] eth0: no IPv6 routers present"}
+{"firmware": "dir601_revB_FW_201", "timestamp": "09:07:08", "label": "Nothing", "message": "[   21.040000] br0: no IPv6 routers present"}
