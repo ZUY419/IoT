@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>專題網頁展示</title>
+
+    <!-- Google 字體 -->
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap" rel="stylesheet">
+    <!-- 連結外部 CSS 檔案 -->
+    <link rel="stylesheet" href="css/index.css">
+</head>
+<body>
+    <header>
+        <section class="web_title">
+            <p>專題: 利用 AI Agent 對 IoT 進行滲透測試</p>
+        </section>
+    </header>
+
+    <!-- 修正：Ubuntu 檔名大小寫敏感，將 JS/index.js 改為小寫 js/index.js -->
+    <script src="js/index.js"></script>
+    <article>
+        <div style="height: 10px;"></div>
+        <section class="info_block">
+            <!-- 介面按鈕切換區 -->
+            <div class="pentest_buttons">
+                <section class="switch_show_buttons">
+                    <button class="switch_show_button" onclick="switch_button_state(this)" value="IoT Devices">
+                        IoT 設備
+                    </button>
+                    <button class="switch_show_button" onclick="switch_button_state(this)" value="Terminal">
+                        終端機
+                    </button>
+                    <button class="switch_show_button" onclick="switch_button_state(this)" value="Shared Memory">
+                        共享記憶體
+                    </button>
+                    <button class="switch_show_button" onclick="switch_button_state(this)" value="Tool History">
+                        工具歷史
+                    </button>
+                    <button class="switch_show_button" onclick="switch_button_state(this)" value="AI Interaction">
+                        AI 互動
+                    </button>
+                </section>
+            </div>
+            
+            <!-- 介面訊息顯示區 -->
+            <section class="info_show">
+                <div class="info_title_block">
+                    <div class="info_title">
+                        <p class="info_title_name"></p>
+                        <p class="info_title_data"></p>
+                    </div>
+                    <p class="pentest_state"></p>
+                </div>
+                <hr style="margin: 0px; border-color: #FFF8F0;">
+                <div class="info_show_block">
+                    <!-- 畫面顯示 -->
+                </div>
+            </section>
+        </section>
+    </article>
+</body>
+</html>
