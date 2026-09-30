@@ -13,11 +13,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>專題網頁展示</title>
+    <title>AI Agent IoT 滲透測試控制台</title>
 
-    <!-- Google 字體 -->
-    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap" rel="stylesheet">
-    <!-- 連結外部 CSS 檔案 -->
+    <!-- Google 字體與 Fira Code 程式碼字型 -->
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=M+PLUS+Rounded+1c:wght@400;700&display=swap" rel="stylesheet">
+    <!-- 外部樣式表 -->
     <link rel="stylesheet" href="css/index.css">
 </head>
 <body>
@@ -27,10 +27,10 @@
         </section>
     </header>
 
-    <!-- 修正：Ubuntu 檔名大小寫敏感，將 JS/index.js 改為小寫 js/index.js -->
+    <!-- 腳本引入 (注意 Linux 下小寫路徑) -->
     <script src="js/index.js"></script>
+
     <article>
-        <div style="height: 10px;"></div>
         <section class="info_block">
             <!-- 介面按鈕切換區 -->
             <div class="pentest_buttons">
@@ -62,9 +62,9 @@
                     </div>
                     <p class="pentest_state"></p>
                 </div>
-                <hr style="margin: 0px; border-color: #FFF8F0;">
+                <hr style="margin: 0px; border-color: #C08552; opacity: 0.4;">
                 <div class="info_show_block">
-                    <!-- 畫面顯示 -->
+                    <!-- 動態內容渲染區 -->
                 </div>
             </section>
         </section>
@@ -72,80 +72,6 @@
 </body>
 </html>
 
-```
-
-### 📄 `./test_terminal.py`
-
-```python
-import time
-import requests
-
-url = "http://localhost:8000/api/pentest/send_log"  # 你的 API 網址
-
-class log_info:
-    """
-    level = 0(info), 1(warn), 2(error)
-    """
-    level = 0
-
-    # 內部輔助方法：統一處理 API 發送與例外狀況
-    @staticmethod
-    def _send(log_content, log_type):
-        payload = {
-            "log": str(log_content),
-            "log_type": log_type
-        }
-        try:
-            # 🚀 實際發送 POST API 請求
-            response = requests.post(url, json=payload, timeout=2)
-            if response.status_code != 200:
-                print(f"[API WARN] 伺服器回應狀態碼: {response.status_code}")
-        except requests.exceptions.ConnectionError:
-            print(f"[API ERROR] 無法連線到伺服器 ({url})，請確認 FastAPI 是否正在執行。")
-        except Exception as e:
-            print(f"[API ERROR] 發送日誌失敗: {e}")
-
-    def info(log):
-        if log_info.level >= 0:
-            print(f"[INFO    ] {log}")
-            log_info._send(log, "INFO")
-
-    def tool(tool_name):
-        if log_info.level <= 0:
-            print("")
-            print(f"[TOOL    ] {tool_name}")
-            log_info._send(tool_name, "TOOL")
-
-    def warn(log):
-        if log_info.level <= 1:
-            print(f"[WARN    ] {log}")
-            log_info._send(log, "WARN")
-
-    def error(log):
-        if log_info.level <= 2:
-            print(f"[ERROR   ] {log}")
-            log_info._send(log, "ERROR")
-
-    def AI_prompt(prompt):
-        if log_info.level <= 0:
-            print(f"[PROMPT  ] {prompt}")
-            log_info._send(prompt, "AI_PROMPT")
-
-    def AI_response(response):
-        if log_info.level <= 0:
-            print(f"[RESPONSE] {response}")
-            log_info._send(response, "AI_RESPONSE")
-
-# 測試迴圈
-while True:
-    log_info.info("Start Pentest!")
-    log_info.tool("run_nmap_udp")
-    log_info.warn("Port Cannot scan!")
-    log_info.error("Argument Keyword Error!")
-    log_info.AI_prompt("What is Pentest?")
-    log_info.AI_response("I don't know what you say.")
-
-    time.sleep(1)
 ```
 
 ### 📄 `./API/main.py`
@@ -156,9 +82,11 @@ import os
 import shutil
 import subprocess
 import time
-from typing import List, Optional
 import urllib.request
+import threading
+import sys
 
+from typing import List, Optional
 from pathlib import Path
 from anyio import to_thread
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -169,7 +97,7 @@ import API.util as util
 
 app = FastAPI()
 
-# 跨域資源共享 (CORS) 設定
+# 設定 CORS 允許跨域連線
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -178,12 +106,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 全域變數：記錄當前運行的子行程
 web_service_process = None
 pentest_process = None
 
-
-# --- WebSocket 連線管理器 ---
 class ConnectionManager:
 
   def __init__(self):
@@ -193,16 +118,14 @@ class ConnectionManager:
     await websocket.accept()
     self.active_connections.append(websocket)
     print(
-        "[WebSocket] 新接收端已連線，當前連線數:"
-        f" {len(self.active_connections)}"
+        f"[WebSocket] 新接收端已連線，當前連線數: {len(self.active_connections)}"
     )
 
   def disconnect(self, websocket: WebSocket):
     if websocket in self.active_connections:
       self.active_connections.remove(websocket)
       print(
-          "[WebSocket] 接收端已斷開，當前連線數:"
-          f" {len(self.active_connections)}"
+          f"[WebSocket] 接收端已斷開，當前連線數: {len(self.active_connections)}"
       )
 
   async def broadcast(self, message: str):
@@ -217,23 +140,16 @@ class ConnectionManager:
     for dead_conn in disconnected_clients:
       self.disconnect(dead_conn)
 
-
 manager = ConnectionManager()
 
-
-# --- Pydantic Models ---
 class CommandPayload(BaseModel):
   log: str
   log_type: str
 
-
 class StartPentestPayload(BaseModel):
   device_name: Optional[str] = None
 
-
-# --- 輔助函式：檢查網頁 API 是否就緒 ---
 def _check_web_service_ready(url: str, timeout_sec: int = 30) -> bool:
-  """輪詢網頁 API，傳回 200 即代表就緒"""
   start_time = time.time()
   while time.time() - start_time < timeout_sec:
     try:
@@ -245,34 +161,30 @@ def _check_web_service_ready(url: str, timeout_sec: int = 30) -> bool:
       time.sleep(1)
   return False
 
-
-# --- 輔助函式：構建開啟新 Terminal 的指令 ---
-def _build_terminal_command(title: str, script_path: Path, args: List[str] = None) -> List[str]:
-  """
-  自動偵測系統支援的 Terminal emulator (優先使用 gnome-terminal，其次 xterm)
-  並加上可長久維持視窗開著的指令。
-  """
-  cmd_str = f"bash \"{script_path}\""
+def _build_terminal_command(
+    title: str, script_path: Path, args: List[str] = None
+) -> List[str]:
+  cmd_str = f'bash "{script_path}"'
   if args:
     cmd_str += " " + " ".join(args)
-  
-  # 執行完腳本後保持 Terminal 開著 (可觀看 Log 或排錯)
   cmd_str += "; exec bash"
 
-  if shutil.which("gnome-terminal"):
+  has_display = (
+      os.environ.get("DISPLAY") is not None
+      or os.environ.get("WAYLAND_DISPLAY") is not None
+  )
+
+  if has_display and shutil.which("gnome-terminal"):
     return ["gnome-terminal", f"--title={title}", "--", "bash", "-c", cmd_str]
-  elif shutil.which("xterm"):
+  elif has_display and shutil.which("xterm"):
     return ["xterm", "-title", title, "-e", "bash", "-c", cmd_str]
-  elif shutil.which("konsole"):
+  elif has_display and shutil.which("konsole"):
     return ["konsole", "-p", f"tabtitle={title}", "-e", "bash", "-c", cmd_str]
   else:
-    # 若無桌面 Terminal 模擬器，降級回背景執行
+    # 無 GUI 視窗環境下自動降級為背景執行
     return ["bash", str(script_path)] + (args if args else [])
 
-
-# --- 同步任務處理函式 ---
 def _sync_get_devices_list():
-  """讀取韌體資料夾內的檔案列表"""
   folder = util.get_folder()
   devices_folder = (
       folder.parent.parent
@@ -283,90 +195,97 @@ def _sync_get_devices_list():
   ).resolve()
 
   if not devices_folder.exists() or not devices_folder.is_dir():
+    print(f"[!] 找不到韌體資料夾: {devices_folder}")
     return {"status": 404, "files_name": []}
 
   file_names = [
-      file.name for file in devices_folder.iterdir() if file.is_file()
+      file.stem for file in devices_folder.iterdir() if file.is_file()
   ]
   return {"status": 200, "files_name": file_names}
 
-
 def _sync_start_pentest(device_name: Optional[str]):
-  """開獨立 Terminal 執行 run.sh -> 確認網頁正常 -> 開獨立 Terminal 執行 startPentest.sh"""
-  global web_service_process, pentest_process
+    global web_service_process
 
-  # 1. 檢查滲透測試是否正在執行
-  if pentest_process is not None and pentest_process.poll() is None:
-    return {"status": 400, "message": "滲透測試已經在執行中了！"}
+    if web_service_process is not None and web_service_process.poll() is None:
+        return {"status": 400, "message": "滲透測試服務已經在執行中了！"}
 
-  current_folder = util.get_folder()
-  project_root = current_folder.parent.parent
+    current_folder = util.get_folder()
+    project_root = current_folder.parent.parent
 
-  run_sh_path = (project_root / "run.sh").resolve()
-  pentest_sh_path = (project_root / "startPentest.sh").resolve()
+    run_sh_path = (project_root / "run.sh").resolve()
 
-  if not run_sh_path.exists():
-    return {"status": 404, "message": f"找不到 run.sh 腳本: {run_sh_path}"}
-  if not pentest_sh_path.exists():
-    return {
-        "status": 404,
-        "message": f"找不到 startPentest.sh 腳本: {pentest_sh_path}",
-    }
+    if not run_sh_path.exists():
+        return {"status": 404, "message": f"找不到 run.sh 腳本: {run_sh_path}"}
 
-  env_vars = os.environ.copy()
-  # 確保 GUI 視窗能顯示在目前的 X11 / Wayland 顯示器上
-  if "DISPLAY" not in env_vars:
-    env_vars["DISPLAY"] = ":0"
+    env_vars = os.environ.copy()
+    if "DISPLAY" not in env_vars:
+        env_vars["DISPLAY"] = ":0"
 
-  # 2. 開啟獨立 Terminal 執行 run.sh
-  if web_service_process is None or web_service_process.poll() is not None:
-    print("[Pipeline] 正在開啟獨立 Terminal 啟動網頁服務 (run.sh)...")
-    run_cmd = _build_terminal_command("IoT Web Service (run.sh)", run_sh_path)
-    web_service_process = subprocess.Popen(
-        run_cmd, cwd=str(project_root), env=env_vars
-    )
+    try:
+        run_args = [device_name] if device_name else []
+        run_cmd = _build_terminal_command("IoT Pentest Master (run.sh)", run_sh_path, run_args)
+        
+        web_service_process = subprocess.Popen(
+            run_cmd, cwd=str(project_root), env=env_vars
+        )
 
-  # 3. 檢查網頁服務狀態 (健康檢查)
-  target_health_url = "http://192.168.0.1"
-  print(f"[Pipeline] 等待網頁服務就緒 ({target_health_url})...")
-  is_ready = _check_web_service_ready(target_health_url, timeout_sec=25)
+        return {
+            "status": 200,
+            "message": f"已成功啟動滲透測試環境，將於網頁就緒後自動開啟 startPentest.sh 視窗！",
+            "pid": web_service_process.pid
+        }
+    except Exception as e:
+        return {"status": 500, "message": f"啟動失敗: {str(e)}"}
 
-  if not is_ready:
-    return {
-        "status": 500,
-        "message": "網頁服務 (run.sh) 啟動超時，取消啟動滲透測試視窗。",
-    }
+# ===== 重啟 Uvicorn 的輔助函式 =====
+# def _restart_uvicorn():
+#     """延遲重啟 Uvicorn 服務（以相同參數重新執行當前 Python 行程）"""
+#     print("[*] 正在關閉並重新開啟 Uvicorn 服務...")
+#     os.execv(sys.executable, [sys.executable] + sys.argv)
 
-  print("[Pipeline] 網頁服務運作正常！開啟獨立 Terminal 執行滲透測試 (startPentest.sh)...")
+# ===== 修改後的停止與重啟函式 =====
+def _sync_stop_pentest():
+    global web_service_process, pentest_process
 
-  # 4. 開啟獨立 Terminal 執行 startPentest.sh
-  pentest_args = ["--device", device_name] if device_name else []
-  pentest_cmd = _build_terminal_command("IoT Start Pentest", pentest_sh_path, pentest_args)
+    # 1. 先安全關閉 Python 記錄的腳本行程
+    if pentest_process is not None and pentest_process.poll() is None:
+        try:
+            pentest_process.terminate()
+            pentest_process.wait(timeout=2)
+        except Exception:
+            pentest_process.kill()
+        pentest_process = None
 
-  try:
-    pentest_process = subprocess.Popen(
-        pentest_cmd, cwd=str(project_root), env=env_vars
-    )
+    if web_service_process is not None and web_service_process.poll() is None:
+        try:
+            web_service_process.terminate()
+            web_service_process.wait(timeout=2)
+        except Exception:
+            web_service_process.kill()
+        web_service_process = None
+
+    # 2. 強制關閉系統中所有正在執行的 .sh 腳本（含 run.sh, startPentest.sh 及其子行程）
+    try:
+        subprocess.run(["pkill", "-9", "-f", r"\.sh"], check=False)
+        subprocess.run(["pkill", "-9", "-f", "run.sh"], check=False)
+        subprocess.run(["pkill", "-9", "-f", "startPentest.sh"], check=False)
+        print("[*] 已發送 pkill 強制清理所有 .sh 行程")
+    except Exception as e:
+        print(f"[!] 清除 .sh 行程時發生例外: {e}")
+
+    # 3. 安排 1 秒後觸發 Uvicorn 重啟 (留時間讓 API 完成 HTTP 200 回應)
+    # threading.Timer(1.0, _restart_uvicorn).start()
 
     return {
         "status": 200,
-        "message": "已成功開啟獨立 Terminal 視窗執行網頁與滲透測試服務！",
-        "web_pid": web_service_process.pid,
-        "pentest_pid": pentest_process.pid,
+        "message": "已成功關閉所有 .sh 腳本，Uvicorn 服務將於 1 秒內自動重啟！"
     }
-  except Exception as e:
-    return {"status": 500, "message": f"開啟 Terminal 視窗失敗: {str(e)}"}
-
-
-# --- API 端點 ---
-
 
 @app.post("/api/pentest/send_log")
 async def receive_from_a(payload: CommandPayload):
   log_data = json.dumps({"log": payload.log, "log_type": payload.log_type})
   await manager.broadcast(log_data)
   return {"status": 200, "message": "Log 已成功廣播"}
-
 
 @app.websocket("/ws/receive_b")
 async def websocket_b(websocket: WebSocket):
@@ -376,9 +295,8 @@ async def websocket_b(websocket: WebSocket):
       await websocket.receive_text()
   except WebSocketDisconnect:
     manager.disconnect(websocket)
-  except Exception as e:
+  except Exception:
     manager.disconnect(websocket)
-
 
 @app.post("/api/pentest/get_devices_list")
 async def get_devices_list():
@@ -387,7 +305,6 @@ async def get_devices_list():
   except Exception as e:
     return {"status": 500, "files_name": [], "error": str(e)}
 
-
 @app.post("/api/pentest/start_pentest")
 async def start_pentest(payload: StartPentestPayload = None):
   try:
@@ -395,6 +312,14 @@ async def start_pentest(payload: StartPentestPayload = None):
     return await to_thread.run_sync(_sync_start_pentest, device_name)
   except Exception as e:
     return {"status": 500, "message": str(e)}
+
+@app.post("/api/pentest/stop_pentest")
+async def stop_pentest():
+  try:
+    return await to_thread.run_sync(_sync_stop_pentest)
+  except Exception as e:
+    return {"status": 500, "message": str(e)}
+
 ```
 
 ### 📄 `./API/util.py`
@@ -447,7 +372,7 @@ header {
 
 .web_title {
     color: #C08552;
-    font-size: 30px;
+    font-size: 28px;
     font-weight: bold;
 }
 
@@ -503,7 +428,7 @@ article {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-/* 內容顯示主要區塊 */
+/* 內容顯示主區域 */
 .info_show {
     flex: 1;
     min-height: 0;
@@ -513,7 +438,7 @@ article {
     border-radius: 14px;
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 8px;
     box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
 }
 
@@ -532,7 +457,7 @@ article {
 }
 
 .info_title_name {
-    font-size: 26px;
+    font-size: 24px;
     font-weight: bold;
     color: #FFF8F0;
 }
@@ -540,7 +465,7 @@ article {
 .info_title_data {
     font-size: 16px;
     font-weight: bold;
-    color: #FFF8F0;
+    color: #C08552;
 }
 
 .info_show_block {
@@ -549,19 +474,36 @@ article {
     overflow-y: auto;
 }
 
-/* 終端顯示主區塊 */
+/* 深色美化滾動條 */
+.terminal_show_block::-webkit-scrollbar,
+.info_show_block::-webkit-scrollbar,
+.ai_show_block::-webkit-scrollbar,
+.memory_dashboard::-webkit-scrollbar {
+    width: 6px;
+}
+.terminal_show_block::-webkit-scrollbar-track,
+.info_show_block::-webkit-scrollbar-track,
+.ai_show_block::-webkit-scrollbar-track,
+.memory_dashboard::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.03);
+}
+.terminal_show_block::-webkit-scrollbar-thumb,
+.info_show_block::-webkit-scrollbar-thumb,
+.ai_show_block::-webkit-scrollbar-thumb,
+.memory_dashboard::-webkit-scrollbar-thumb {
+    background-color: #8C5A3C;
+    border-radius: 3px;
+}
+
+/* 終端 Terminal 樣式 */
 .terminal_show_block {
     height: 100%;
     width: 100%;
-    
     background-color: transparent;
-    
-    font-family: 'Fira Code', 'Consolas', 'Courier New', monospace;
+    font-family: 'Fira Code', 'Consolas', monospace;
     font-size: 13.5px;
     font-weight: bold;
-
     line-height: 1.6;
-    
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -569,22 +511,6 @@ article {
     gap: 6px;
 }
 
-/* 深色美化滾動條 */
-.terminal_show_block::-webkit-scrollbar,
-.info_show_block::-webkit-scrollbar {
-    width: 6px;
-}
-.terminal_show_block::-webkit-scrollbar-track,
-.info_show_block::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.03);
-}
-.terminal_show_block::-webkit-scrollbar-thumb,
-.info_show_block::-webkit-scrollbar-thumb {
-    background-color: #8C5A3C;
-    border-radius: 3px;
-}
-
-/* Log 每列通用設定 */
 div[class$="_section"] {
     display: flex;
     align-items: center;
@@ -606,7 +532,6 @@ div[class$="_section"] {
     flex-shrink: 0;
 }
 
-/* Log 配色 */
 .log_type_INFO { background-color: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); }
 .log_content_INFO { color: #e2e8f0; }
 
@@ -625,7 +550,7 @@ div[class$="_section"] {
 .log_type_AI_RESPONSE { background-color: rgba(244, 114, 182, 0.15); color: #f472b6; border: 1px solid rgba(244, 114, 182, 0.4); }
 .log_content_AI_RESPONSE { color: #fbcfe8; }
 
-/* 設備選擇區域 */
+/* IoT 設備選擇區域與按鈕組 */
 .device_selection_block {
     margin: 8px 0;
     padding: 10px 16px;
@@ -635,45 +560,78 @@ div[class$="_section"] {
     align-items: center;
     justify-content: space-between;
 }
-.device_name { color: #8C5A3C; font-size: 20px; font-weight: bold; }
-.device_button { color: #2A835F; font-size: 16px; font-weight: bold; background: transparent; border: none; cursor: pointer; }
-.device_button:hover { color: #092328; }
 
-/* ==========================================
-   Tool Card 工具卡片設計
-   ========================================== */
+.device_name { 
+    color: #8C5A3C; 
+    font-size: 20px; 
+    font-weight: bold; 
+}
+
+.device_btn_group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.device_button { 
+    padding: 6px 16px; 
+    font-size: 15px; 
+    font-weight: bold; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    border: none; 
+    transition: all 0.25s ease;
+}
+
+.device_button.start_btn { 
+    background-color: #2A835F; 
+    color: #FFF8F0; 
+}
+
+.device_button.start_btn:hover:not(:disabled) { 
+    background-color: #1e5e44; 
+}
+
+.device_button.start_btn.active { 
+    background-color: #164f38; 
+    color: #A7F3D0; 
+}
+
+.device_button.stop_btn { 
+    background-color: #B91C1C; 
+    color: #FFF8F0; 
+}
+
+.device_button.stop_btn:hover:not(:disabled) { 
+    background-color: #991B1B; 
+}
+
+.device_button:disabled { 
+    background-color: #6B7280; 
+    color: #D1D5DB; 
+    cursor: not-allowed; 
+    opacity: 0.6; 
+}
+
+/* Tool History 工具卡片 */
 .tool_card {
     background-color: #1a1010;
-    border: 1px solid rgba(168, 85, 247, 0.4); /* 科技紫邊框 */
+    border: 1px solid rgba(168, 85, 247, 0.4);
     border-radius: 10px;
-    margin-bottom: 14px;
+    margin-bottom: 12px;
     padding: 12px 14px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    transition: transform 0.2s ease, border-color 0.2s ease;
 }
 
-.tool_card:hover {
-    border-color: rgba(192, 132, 252, 0.8);
-    transform: translateY(-2px);
-}
-
-/* 卡片頁首 */
 .tool_card_header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding-bottom: 8px;
     border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
-    margin-bottom: 10px;
+    margin-bottom: 8px;
 }
 
-.tool_title_group {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-/* TOOL Badge 標籤 */
 .tool_badge {
     background-color: rgba(168, 85, 247, 0.2);
     color: #c084fc;
@@ -682,84 +640,28 @@ div[class$="_section"] {
     font-weight: bold;
     padding: 2px 8px;
     border-radius: 4px;
-    letter-spacing: 0.5px;
 }
 
-/* 工具名稱 */
 .tool_name {
     color: #FFF8F0;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: bold;
     font-family: 'Fira Code', monospace;
 }
 
-/* 狀態顯示 */
-.tool_status {
-    color: #34d399; /* 翡翠綠表示執行完成 */
-    font-size: 11px;
-    font-weight: bold;
-    letter-spacing: 0.5px;
-}
-
-/* 卡片內容區域 */
-.tool_card_body {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.tool_field {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.tool_label {
-    color: #C08552;
-    font-size: 12px;
-    font-weight: bold;
-    font-family: 'Fira Code', monospace;
-}
-
-/* 參數與回應的黑客終端框 (<pre>) */
-.tool_argument,
-.tool_response {
+.tool_argument {
     background-color: #0d0807;
     border: 1px solid #302020;
+    color: #fef08a;
     border-radius: 6px;
     padding: 8px 10px;
-    margin: 0;
-    font-family: 'Fira Code', 'Consolas', monospace;
+    font-family: 'Fira Code', monospace;
     font-size: 13px;
-    line-height: 1.4;
-    white-space: pre-wrap;  /* 自動換行 */
+    white-space: pre-wrap;
     word-break: break-all;
-    max-height: 150px;       /* 超過高度出現滾動條 */
-    overflow-y: auto;
 }
 
-/* 參數點亮顏色 */
-.tool_argument {
-    color: #fef08a; /* 軟黃色高亮參數 */
-}
-
-/* 回應點亮顏色 */
-.tool_response {
-    color: #e2e8f0; /* 純淨灰白 */
-}
-
-/* 美化滾動條 */
-.tool_argument::-webkit-scrollbar,
-.tool_response::-webkit-scrollbar {
-    width: 4px;
-}
-.tool_argument::-webkit-scrollbar-thumb,
-.tool_response::-webkit-scrollbar-thumb {
-    background-color: #8C5A3C;
-    border-radius: 2px;
-}
-
-/* AI 互動容器與對話卡片樣式 */
+/* AI 對話卡片 */
 .ai_show_block {
     height: 100%;
     width: 100%;
@@ -767,15 +669,7 @@ div[class$="_section"] {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    padding-right: 6px;
-}
-
-.ai_show_block::-webkit-scrollbar {
-    width: 6px;
-}
-.ai_show_block::-webkit-scrollbar-thumb {
-    background-color: #8C5A3C;
-    border-radius: 3px;
+    padding-right: 4px;
 }
 
 .ai_message_card {
@@ -806,9 +700,7 @@ div[class$="_section"] {
     border: 1px solid rgba(52, 211, 153, 0.4);
     color: #a7f3d0;
 }
-.ai_msg_prompt .ai_msg_header {
-    color: #34d399;
-}
+.ai_msg_prompt .ai_msg_header { color: #34d399; }
 
 .ai_msg_response {
     align-self: flex-end;
@@ -816,38 +708,170 @@ div[class$="_section"] {
     border: 1px solid rgba(244, 114, 182, 0.4);
     color: #fbcfe8;
 }
-.ai_msg_response .ai_msg_header {
-    color: #f472b6;
+.ai_msg_response .ai_msg_header { color: #f472b6; }
+
+/* 通用型共享記憶體 (Shared Memory) 面板 */
+.memory_dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    height: 100%;
+    overflow-y: auto;
+    padding-right: 4px;
+    font-family: 'Fira Code', 'Consolas', monospace;
 }
+
+.mem_card {
+    background-color: #1a1010;
+    border: 1px solid #C08552;
+    border-radius: 10px;
+    padding: 12px 14px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+}
+
+.mem_card_title {
+    font-size: 15px;
+    font-weight: bold;
+    color: #FFF8F0;
+    margin-bottom: 10px;
+    border-bottom: 1px dashed rgba(192, 133, 82, 0.4);
+    padding-bottom: 5px;
+}
+
+.mem_info_grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 10px;
+}
+
+.mem_info_item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #0d0807;
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid #302020;
+}
+
+.mem_label { color: #C08552; font-size: 12.5px; font-weight: bold; }
+.mem_val { color: #FFF8F0; font-size: 13px; font-weight: bold; word-break: break-all; }
+
+/* 數據表格 */
+.table_responsive {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: 6px;
+    border: 1px solid #302020;
+}
+
+.mem_table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    background-color: #0d0807;
+    text-align: left;
+}
+
+.mem_table th {
+    background-color: #2a1817;
+    color: #C08552;
+    padding: 8px 10px;
+    font-weight: bold;
+    border-bottom: 1px solid #302020;
+    white-space: nowrap;
+}
+
+.mem_table td {
+    padding: 8px 10px;
+    color: #e2e8f0;
+    border-bottom: 1px solid #1a1010;
+}
+
+.generic_array_group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.array_tag_item {
+    background-color: #2a1817;
+    color: #fef08a;
+    border: 1px solid #8C5A3C;
+    padding: 3px 8px;
+    border-radius: 5px;
+    font-size: 12px;
+}
+
+.val_null { color: #64748b; font-style: italic; }
+.val_empty { color: #64748b; font-size: 12px; padding: 2px 0; }
+.val_primitive { color: #a7f3d0; }
+
+.raw_json_details {
+    color: #C08552;
+    cursor: pointer;
+    font-size: 13px;
+    margin-top: 6px;
+}
+
+.raw_json_details summary {
+    padding: 4px 0;
+    font-weight: bold;
+}
+
+.memory_empty_notice {
+    color: #FFF8F0;
+    text-align: center;
+    padding: 40px;
+    font-size: 16px;
+    opacity: 0.7;
+}
+
 ```
 
 ### 📄 `./js/index.js`
 
 ```
-// 記錄目前正在執行的設備名稱與分頁狀態
-var started_device = "";
-var current_tab = "";
-var log_history = ""; // 專門保存 Terminal 歷史 Log (不含 AI)
-var ai_history = "";  // 專門保存 AI 互動歷史 Log
+"use strict";
 
+// ===== 全域狀態管理 =====
+const state = {
+    started_device: "",
+    current_tab: "",
+    current_tool: "",
+    log_history: "",
+    ai_history: "",
+    share_memory_data: null,
+    tool_history_logs: []
+};
+
+// 效能設定
+const CONFIG = {
+    MAX_LOG_ENTRIES: 300, // Terminal / AI 訊息最大保留數，防止 DOM 爆炸
+    RECONNECT_INTERVAL: 3000 // WebSocket 重連間隔 (ms)
+};
+
+let wsB = null;
+let reconnectTimer = null;
+
+// 動態伺服器位址設定 (自動匹配 Host，避免硬編碼 localhost)
 const HOSTNAME = window.location.hostname || "localhost";
 const API_BASE_URL = `http://${HOSTNAME}:8000`;
 const WS_BASE_URL = `ws://${HOSTNAME}:8000`;
 
-// 分頁切換
+// ===== 1. 分頁切換與 UI 渲染 =====
 async function switch_button_state(clickedButton) {
-    const buttonValue = clickedButton.value;
-    current_tab = buttonValue;
+    if (!clickedButton) return;
 
-    const AllButton = document.querySelectorAll(".switch_show_button");
-    AllButton.forEach(btn => {
-        if (btn !== clickedButton) {
-            btn.classList.remove("action");
-            btn.style.fontSize = "";
-        } else {
-            btn.classList.add("action");
-            btn.style.fontSize = "22px";
-        }
+    const buttonValue = clickedButton.value;
+    state.current_tab = buttonValue;
+
+    // 按鈕高亮切換
+    const allButtons = document.querySelectorAll(".switch_show_button");
+    allButtons.forEach(btn => {
+        const isSelected = (btn === clickedButton);
+        btn.classList.toggle("action", isSelected);
+        btn.style.fontSize = isSelected ? "22px" : "";
     });
 
     const info_show_block = document.querySelector(".info_show_block");
@@ -855,90 +879,126 @@ async function switch_button_state(clickedButton) {
     const info_title_data = document.querySelector(".info_title_data");
     const pentest_state = document.querySelector(".pentest_state");
 
+    if (!info_show_block) return;
+
+    // 清空顯示區塊與標題
     info_show_block.innerHTML = "";
-    info_title_name.textContent = "";
-    info_title_data.textContent = "";
-    pentest_state.textContent = "";
+    if (info_title_name) info_title_name.textContent = "";
+    if (info_title_data) info_title_data.textContent = "";
+    if (pentest_state) pentest_state.textContent = "";
 
-    if (buttonValue === "Shared Memory") {
-        info_title_name.textContent = "當前共享記憶體的資料";
-        info_show_block.innerHTML = `<p style="color: #FFF8F0;">共享記憶體內容...</p>`;
+    // 分頁渲染邏輯
+    switch (buttonValue) {
+        case "Shared Memory":
+            if (info_title_name) info_title_name.textContent = "當前共享記憶體的資料";
+            render_share_memory();
+            break;
 
-    } else if (buttonValue === "Tool History") {
-        info_title_name.textContent = "當前使用過的工具";
-        info_show_block.innerHTML = `<p style="color: #FFF8F0;">工具歷史紀錄...</p>`;
+        case "Tool History":
+            if (info_title_name) info_title_name.textContent = "當前使用過的工具";
+            render_tool_history();
+            break;
 
-    } else if (buttonValue === "AI Interaction") {
-        // 🤖 切換至 AI 互動分頁
-        info_title_name.textContent = "與 AI 的對話紀錄";
-        info_show_block.innerHTML = `<div class="ai_show_block" id="ai_container">${ai_history}</div>`;
-        scrollToBottom("ai_container");
+        case "AI Interaction":
+            if (info_title_name) info_title_name.textContent = "與 AI 的對話紀錄";
+            info_show_block.innerHTML = `<div class="ai_show_block" id="ai_container">${state.ai_history}</div>`;
+            scrollToBottom("ai_container");
+            break;
 
-    } else if (buttonValue === "Terminal") {
-        // 🖥️ 切換至 Terminal 分頁
-        info_title_name.textContent = "當前工具 Terminal Log";
-        info_show_block.innerHTML = `<div class="terminal_show_block" id="terminal_container">${log_history}</div>`;
-        scrollToBottom("terminal_container");
+        case "Terminal":
+            if (info_title_name) info_title_name.textContent = "當前工具";
+            if (info_title_data) {
+                info_title_data.textContent = state.current_tool !== "" 
+                    ? state.current_tool 
+                    : "尚未開啟設備或是尚未使用到任何工具";
+            }
+            info_show_block.innerHTML = `<div class="terminal_show_block" id="terminal_container">${state.log_history}</div>`;
+            scrollToBottom("terminal_container");
+            break;
 
-    } else if (buttonValue === "IoT Devices") {
-        info_title_name.textContent = "當前設備:";
-        info_title_data.textContent = started_device !== "" ? started_device : "尚未選擇設備";
+        case "IoT Devices":
+            if (info_title_name) info_title_name.textContent = "當前設備:";
+            if (info_title_data) {
+                info_title_data.textContent = state.started_device !== "" ? state.started_device : "尚未選擇設備";
+            }
+            await render_iot_devices(info_show_block);
+            break;
 
-        const devices_name = await get_devices_name();
-        if (devices_name && devices_name.length > 0) {
-            let devicesHTML = "";
-            devices_name.forEach(file_name => {
-                const isStarted = (file_name === started_device);
-                const btnText = isStarted ? "Started" : "Start";
-                const btnColor = isStarted ? "color: #092328;" : "";
+        default:
+            console.warn(`[UI] 未知的分頁標籤: ${buttonValue}`);
+            break;
+    }
+}
 
-                devicesHTML += `
-                    <div class="device_selection_block" id="dev_${file_name}">
-                        <p class="device_name">${file_name}</p>
-                        <button class="device_button" id="${file_name}" style="${btnColor}" onclick="start_device(this)">${btnText}</button>
+// 渲染 IoT 設備選單
+async function render_iot_devices(container) {
+    const devices_name = await get_devices_name();
+    if (devices_name && devices_name.length > 0) {
+        const devicesHTML = devices_name.map(file_name => {
+            const isStarted = (file_name === state.started_device);
+            return `
+                <div class="device_selection_block" id="dev_${escapeHtml(file_name)}">
+                    <p class="device_name">${escapeHtml(file_name)}</p>
+                    <div class="device_btn_group">
+                        <button class="device_button start_btn ${isStarted ? 'active' : ''}" 
+                                id="start_${escapeHtml(file_name)}" 
+                                onclick="start_device('${escapeHtml(file_name)}')" 
+                                ${isStarted ? 'disabled' : ''}>
+                            ${isStarted ? 'Running' : 'Start'}
+                        </button>
+                        <button class="device_button stop_btn" 
+                                id="stop_${escapeHtml(file_name)}" 
+                                onclick="stop_device('${escapeHtml(file_name)}')" 
+                                ${!isStarted ? 'disabled' : ''}>
+                            Stop
+                        </button>
                     </div>
-                `;
-            });
-            info_show_block.innerHTML = devicesHTML;
-        } else {
-            info_show_block.innerHTML = `<p class="device_name" style="color: #f87171;">找不到任何 IoT 設備檔案</p>`;
+                </div>
+            `;
+        }).join("");
+        container.innerHTML = devicesHTML;
+    } else {
+        container.innerHTML = `<p class="device_name" style="color: #f87171; padding: 10px;">找不到任何 IoT 設備檔案</p>`;
+    }
+}
+
+// ===== 2. 滲透測試設備控制 (Start / Stop) =====
+async function start_device(deviceName) {
+    if (state.started_device === "") {
+        state.started_device = deviceName;
+
+        const info_title_data = document.querySelector(".info_title_data");
+        if (info_title_data) info_title_data.textContent = deviceName;
+
+        await start_pentest(deviceName);
+
+        const currentBtn = document.querySelector(`.switch_show_button[value='IoT Devices']`);
+        if (currentBtn) switch_button_state(currentBtn);
+    } else if (state.started_device !== deviceName) {
+        alert(`目前已有設備 [${state.started_device}] 正在執行中，請先停止它！`);
+    }
+}
+
+async function stop_device(deviceName) {
+    if (state.started_device === deviceName) {
+        if (confirm(`確定要停止設備 [${deviceName}] 的滲透測試嗎？`)) {
+            await stop_pentest();
+            state.started_device = "";
+
+            const info_title_data = document.querySelector(".info_title_data");
+            if (info_title_data) info_title_data.textContent = "尚未選擇設備";
+
+            const currentBtn = document.querySelector(`.switch_show_button[value='IoT Devices']`);
+            if (currentBtn) switch_button_state(currentBtn);
         }
     }
 }
 
-// 啟動設備測試
-async function start_device(clickedButton) {
-    const deviceName = clickedButton.id;
-
-    if (started_device === "") {
-        clickedButton.textContent = "Started";
-        clickedButton.style.color = "#092328";
-
-        started_device = deviceName;
-
-        const info_title_data = document.querySelector(".info_title_data");
-        if (info_title_data) info_title_data.textContent = deviceName;
-        
-        initReceiver();
-        await start_pentest(deviceName);
-    } else if (started_device !== deviceName) {
-        alert(`目前已有設備 [${started_device}] 正在執行中，請先停止它！`);
-    }
-}
-
-let wsB = null;
-
-// 通用自動滾動到底部
-function scrollToBottom(containerId) {
-    const container = document.getElementById(containerId);
-    if (container) {
-        container.scrollTop = container.scrollHeight;
-    }
-}
-
-// 初始化並連線 WebSocket
+// ===== 3. WebSocket 即時通訊接收器 =====
 function initReceiver() {
-    if (wsB && wsB.readyState === WebSocket.OPEN) return;
+    if (wsB && (wsB.readyState === WebSocket.OPEN || wsB.readyState === WebSocket.CONNECTING)) return;
+
+    if (reconnectTimer) clearTimeout(reconnectTimer);
 
     wsB = new WebSocket(`${WS_BASE_URL}/ws/receive_b`);
 
@@ -947,66 +1007,265 @@ function initReceiver() {
     };
 
     wsB.onmessage = function(event) {
-        const data = JSON.parse(event.data);
+        try {
+            const data = JSON.parse(event.data);
+            const log_type = (data.log_type || "").toUpperCase();
 
-        // 🔀 完全分離條件判斷
-        if (data.log_type === "AI_PROMPT" || data.log_type === "AI_RESPONSE") {
-            // ================= 1. AI 專用 Log =================
-            const isPrompt = data.log_type === "AI_PROMPT";
-            const roleClass = isPrompt ? "ai_msg_prompt" : "ai_msg_response";
-            const roleLabel = isPrompt ? "PROMPT / Prompt" : "AI RESPONSE";
+            // 分流 1：AI 對話訊息
+            if (log_type === "AI_PROMPT" || log_type === "AI_RESPONSE") {
+                const isPrompt = log_type === "AI_PROMPT";
+                const roleClass = isPrompt ? "ai_msg_prompt" : "ai_msg_response";
+                const roleLabel = isPrompt ? "PROMPT / User" : "AI RESPONSE";
 
-            const newAiHTML = `
-                <div class="ai_message_card ${roleClass}">
-                    <div class="ai_msg_header">${roleLabel}</div>
-                    <div class="ai_msg_body">${escapeHtml(data.log)}</div>
-                </div>
-            `;
-            ai_history += newAiHTML;
+                const newAiHTML = `
+                    <div class="ai_message_card ${roleClass}">
+                        <div class="ai_msg_header">${roleLabel}</div>
+                        <div class="ai_msg_body">${escapeHtml(data.log)}</div>
+                    </div>
+                `;
+                state.ai_history += newAiHTML;
 
-            // 若當前在 AI Interaction 分頁，即時渲染
-            if (current_tab === "AI Interaction") {
-                const aiContainer = document.getElementById("ai_container");
-                if (aiContainer) {
-                    aiContainer.insertAdjacentHTML('beforeend', newAiHTML);
-                    scrollToBottom("ai_container");
+                if (state.current_tab === "AI Interaction") {
+                    const aiContainer = document.getElementById("ai_container");
+                    if (aiContainer) {
+                        aiContainer.insertAdjacentHTML('beforeend', newAiHTML);
+                        pruneContainerChildren(aiContainer, CONFIG.MAX_LOG_ENTRIES);
+                        scrollToBottom("ai_container");
+                    }
+                }
+
+            // 分流 2：共享記憶體更新
+            } else if (log_type === "SHARE_MEMORY") {
+                state.share_memory_data = data.log;
+
+                if (state.current_tab === "Shared Memory") {
+                    render_share_memory();
+                }
+
+            // 分流 3：一般 Terminal Log (INFO, TOOL, WARN, ERROR 等)
+            } else {
+                if (log_type === "TOOL") {
+                    state.current_tool = data.log;
+                    state.tool_history_logs.push(data);
+                    
+                    if (state.current_tab === "Tool History") {
+                        render_tool_history();
+                    }
+                }
+
+                const newTerminalLogHTML = `
+                    <div class="log_${log_type}_section">
+                        <span class="log_type_${log_type}">${log_type}</span> 
+                        <span class="log_content_${log_type}">${escapeHtml(data.log)}</span>
+                    </div>
+                `;
+                state.log_history += newTerminalLogHTML;
+
+                if (state.current_tab === "Terminal") {
+                    const termContainer = document.getElementById("terminal_container");
+                    if (termContainer) {
+                        termContainer.insertAdjacentHTML('beforeend', newTerminalLogHTML);
+                        pruneContainerChildren(termContainer, CONFIG.MAX_LOG_ENTRIES);
+                        scrollToBottom("terminal_container");
+                    }
                 }
             }
-
-        } else {
-            // ================= 2. Terminal 工具 Log (非 AI) =================
-            const newTerminalLogHTML = `
-                <div class="log_${data.log_type}_section">
-                    <span class="log_type_${data.log_type}">${data.log_type}</span> 
-                    <span class="log_content_${data.log_type}">${escapeHtml(data.log)}</span>
-                </div>
-            `;
-            log_history += newTerminalLogHTML;
-
-            // 若當前在 Terminal 分頁，即時渲染
-            if (current_tab === "Terminal") {
-                const termContainer = document.getElementById("terminal_container");
-                if (termContainer) {
-                    termContainer.insertAdjacentHTML('beforeend', newTerminalLogHTML);
-                    scrollToBottom("terminal_container");
-                }
-            }
+        } catch (e) {
+            console.error("解析 WebSocket 廣播資料失敗:", e);
         }
     };
 
     wsB.onclose = function() {
-        console.warn("[WebSocket] 連線已斷開，3 秒後嘗試自動重連...");
-        setTimeout(() => {
-            if (started_device !== "") initReceiver();
-        }, 3000);
+        console.warn(`[WebSocket] 連線中斷，${CONFIG.RECONNECT_INTERVAL / 1000} 秒後自動重連...`);
+        reconnectTimer = setTimeout(() => {
+            initReceiver();
+        }, CONFIG.RECONNECT_INTERVAL);
     };
 
     wsB.onerror = function(err) {
-        console.error("[WebSocket Exception]", err);
+        console.error("[WebSocket 錯誤]", err);
     };
 }
 
-// 安全字元轉換 (避免 XSS 注入)
+// ===== 4. 工具歷史紀錄 (Tool History) 渲染器 =====
+function render_tool_history() {
+    const info_show_block = document.querySelector(".info_show_block");
+    if (!info_show_block) return;
+
+    if (state.tool_history_logs.length === 0) {
+        info_show_block.innerHTML = `<p style="color: #FFF8F0; opacity: 0.7; padding: 20px; text-align: center;">尚未收到工具執行紀錄...</p>`;
+        return;
+    }
+
+    let html = `<div style="display: flex; flex-direction: column; gap: 10px; height: 100%; overflow-y: auto;">`;
+    state.tool_history_logs.forEach((item, index) => {
+        html += `
+            <div class="tool_card">
+                <div class="tool_card_header">
+                    <div class="tool_title_group">
+                        <span class="tool_badge">Tool #${index + 1}</span>
+                        <span class="tool_name">${escapeHtml(item.log_type)}</span>
+                    </div>
+                </div>
+                <div class="tool_card_body">
+                    <div class="tool_argument">${escapeHtml(item.log)}</div>
+                </div>
+            </div>
+        `;
+    });
+    html += `</div>`;
+
+    info_show_block.innerHTML = html;
+}
+
+// ===== 5. 通用型共享記憶體 (Shared Memory) 動態渲染器 =====
+function render_share_memory() {
+    const info_show_block = document.querySelector(".info_show_block");
+    if (!info_show_block) return;
+
+    const rawData = state.share_memory_data;
+    if (!rawData || (typeof rawData === "string" && rawData.trim() === "")) {
+        info_show_block.innerHTML = `<div class="memory_empty_notice">尚未收到共享記憶體更新資料...</div>`;
+        return;
+    }
+
+    let parsedData;
+    try {
+        parsedData = (typeof rawData === "string") ? JSON.parse(rawData) : rawData;
+    } catch (e) {
+        info_show_block.innerHTML = `<div class="memory_show_block">${escapeHtml(String(rawData))}</div>`;
+        return;
+    }
+
+    let html = `<div class="memory_dashboard">`;
+    html += renderGenericJson(parsedData, 0);
+
+    html += `
+        <details class="raw_json_details">
+            <summary>📄 檢視原始 JSON 資料 (Raw JSON)</summary>
+            <div class="memory_show_block">${escapeHtml(JSON.stringify(parsedData, null, 2))}</div>
+        </details>
+    `;
+    html += `</div>`;
+
+    info_show_block.innerHTML = html;
+}
+
+// 遞迴解析任意 JSON 物件/陣列結構
+function renderGenericJson(data, level = 0) {
+    if (data === null || data === undefined) {
+        return `<span class="val_null">null</span>`;
+    }
+
+    if (typeof data !== "object") {
+        return `<span class="val_primitive">${escapeHtml(String(data))}</span>`;
+    }
+
+    // 陣列處理
+    if (Array.isArray(data)) {
+        if (data.length === 0) return `<div class="val_empty">[ 空清單 ]</div>`;
+
+        const isArrayOfObjects = data.every(item => typeof item === "object" && item !== null && !Array.isArray(item));
+
+        if (isArrayOfObjects) {
+            const allKeys = Array.from(new Set(data.flatMap(item => Object.keys(item))));
+
+            let tableHtml = `<div class="table_responsive"><table class="mem_table"><thead><tr>`;
+            allKeys.forEach(k => {
+                tableHtml += `<th>${escapeHtml(formatKeyName(k))}</th>`;
+            });
+            tableHtml += `</tr></thead><tbody>`;
+
+            data.forEach(item => {
+                tableHtml += `<tr>`;
+                allKeys.forEach(k => {
+                    const val = item[k];
+                    tableHtml += `<td>${val !== undefined ? renderGenericJson(val, level + 1) : '<span class="val_null">-</span>'}</td>`;
+                });
+                tableHtml += `</tr>`;
+            });
+
+            tableHtml += `</tbody></table></div>`;
+            return tableHtml;
+        } else {
+            let listHtml = `<div class="generic_array_group">`;
+            data.forEach(item => {
+                listHtml += `<div class="array_tag_item">${renderGenericJson(item, level + 1)}</div>`;
+            });
+            listHtml += `</div>`;
+            return listHtml;
+        }
+    }
+
+    // 物件處理
+    const entries = Object.entries(data);
+    if (entries.length === 0) return `<div class="val_empty">{ 空物件 }</div>`;
+
+    const primitives = entries.filter(([_, v]) => typeof v !== "object" || v === null);
+    const complex = entries.filter(([_, v]) => typeof v === "object" && v !== null);
+
+    let objHtml = "";
+
+    if (primitives.length > 0) {
+        const gridContent = primitives.map(([k, v]) => `
+            <div class="mem_info_item">
+                <span class="mem_label">${escapeHtml(formatKeyName(k))}:</span>
+                <span class="mem_val">${escapeHtml(String(v))}</span>
+            </div>
+        `).join("");
+
+        if (level === 0) {
+            objHtml += `
+                <div class="mem_card">
+                    <div class="mem_card_title">📌 基本屬性 (Properties)</div>
+                    <div class="mem_info_grid">${gridContent}</div>
+                </div>
+            `;
+        } else {
+            objHtml += `<div class="mem_info_grid" style="margin-bottom: 10px;">${gridContent}</div>`;
+        }
+    }
+
+    complex.forEach(([k, v]) => {
+        const title = formatKeyName(k);
+        objHtml += `
+            <div class="mem_card">
+                <div class="mem_card_title">📂 ${escapeHtml(title)}</div>
+                <div class="mem_card_body">
+                    ${renderGenericJson(v, level + 1)}
+                </div>
+            </div>
+        `;
+    });
+
+    return objHtml;
+}
+
+// 格式化 Key 名稱 (例：device_information -> Device Information)
+function formatKeyName(key) {
+    return String(key)
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        .replace(/[_-]+/g, ' ')
+        .replace(/\b\w/g, l => l.toUpperCase());
+}
+
+// ===== 6. 輔助函式與 API 呼叫 =====
+function scrollToBottom(containerId) {
+    requestAnimationFrame(() => {
+        const container = document.getElementById(containerId);
+        if (container) {
+            container.scrollTop = container.scrollHeight;
+        }
+    });
+}
+
+// 修剪過多的舊 DOM 節點以增進效能
+function pruneContainerChildren(container, maxCount) {
+    while (container.children.length > maxCount) {
+        container.removeChild(container.firstChild);
+    }
+}
+
 function escapeHtml(text) {
     return String(text)
         .replace(/&/g, "&amp;")
@@ -1016,7 +1275,6 @@ function escapeHtml(text) {
         .replace(/'/g, "&#039;");
 }
 
-// 取得裝置清單 API
 async function get_devices_name() {
     try {
         const response = await fetch(`${API_BASE_URL}/api/pentest/get_devices_list`, {
@@ -1026,16 +1284,16 @@ async function get_devices_name() {
 
         if (response.ok) {
             const data = await response.json();
-            return data.files_name;
+            return data.files_name || [];
         } else {
             return [];
         }
     } catch (error) {
+        console.error("取得裝置清單失敗:", error);
         return [];
     }
 }
 
-// 發送 start_pentest API
 async function start_pentest(deviceName) {
     try {
         const response = await fetch(`${API_BASE_URL}/api/pentest/start_pentest`, {
@@ -1055,10 +1313,23 @@ async function start_pentest(deviceName) {
     }
 }
 
-// 頁面初始化
-window.addEventListener("DOMContentLoaded", () => {
-    pentest_button_init();
-});
+async function stop_pentest() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/pentest/stop_pentest`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            console.log(`[Pentest] ${data.message}`);
+        } else {
+            console.error("發送停止請求失敗");
+        }
+    } catch (error) {
+        console.error("無法發送停止滲透測試請求:", error);
+    }
+}
 
 function pentest_button_init() {
     const firstButton = document.querySelector(".switch_show_button");
@@ -1066,5 +1337,18 @@ function pentest_button_init() {
         switch_button_state(firstButton);
     }
 }
+
+// 頁面初始化與卸載事件
+window.addEventListener("DOMContentLoaded", () => {
+    initReceiver();
+    pentest_button_init();
+});
+
+window.addEventListener("beforeunload", () => {
+    if (wsB) {
+        wsB.onclose = null; // 避免離開頁面時觸發重連機制
+        wsB.close();
+    }
+});
 ```
 
