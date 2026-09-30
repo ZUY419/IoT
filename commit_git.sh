@@ -1,5 +1,5 @@
 PASSWORD="todoroki"
-branch="main"
+branch="Docker"
 
 echo -e "=== Remove .git"
 echo "$PASSWORD" | sudo -S rm -rf .git
@@ -11,7 +11,7 @@ echo -e "\n=== Switch/Create ${branch} branch"
 git checkout -b ${branch}
 
 echo -e "\n=== Add data to .git"
-git add .   # 若要加入全部檔案，請改為 git add .
+git add ./Docker   # 若要加入全部檔案，請改為 git add .
 
 echo -e "\n=== Commit comment"
 git commit -m "test"

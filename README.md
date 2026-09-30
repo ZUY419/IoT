@@ -21,6 +21,7 @@ import faiss
 import numpy as np
 import ollama
 
+# 動態匯入 RAG_search_cve 模組
 try:
     from Docker.RAG.RAG_search_cve import get_cve_details
 except ImportError:
@@ -130,7 +131,7 @@ def search_and_analyze(
 ) -> list:
     """
     1. 產生 Query Embedding 並至 FAISS 搜尋相近向量
-    2. 調用 RAG_search_cve.py 獲取詳細 CVE 結構化資料 (含 PoC, CWE, Vendors, Products)
+    2. 直接調用 RAG_search_cve.py 獲取詳細 CVE 結構化資料
     3. 經由 LLM (AI) 二次篩選相關性後傳回
     """
     query_text = f"search_query: {query}"
@@ -169,31 +170,30 @@ def search_and_analyze(
         if ignore_count >= max_ignore or len(match_cve) >= max_matches:
             break
 
+        # ⚡ 直接調用 RAG_search_cve.py 的 get_cve_details 獲取完整資料
         cve_detail = get_cve_details(cve_id)
         if not cve_detail.get("found"):
             continue
 
         cve_info = {
             "cveID": cve_id,
-            "description": cve_detail.get("description", "No description provided."),
-            "vendors": cve_detail.get("vendors", []),
-            "products": cve_detail.get("products", []),
-            "cwes": cve_detail.get("cwes", [])
+            "description": cve_detail.get("description", "No description provided.")
         }
 
+        # 由 AI 過濾相關性
         result = analyze_single_cve(query, cve_info)
 
         if result.get("relevant"):
             match_cve.append({
                 "cve_id": cve_id,
-                "vendors": cve_detail.get("vendors", []),
-                "products": cve_detail.get("products", []),
+                "service": "",
+                "version": "",
+                "port": "",
                 "severity": cve_detail.get("severity", "UNKNOWN"),
                 "score": cve_detail.get("score", "N/A"),
                 "cvss": cve_detail.get("cvss", "N/A"),
                 "cwes": cve_detail.get("cwes", []),
                 "description": cve_detail.get("description", ""),
-                "solutions": cve_detail.get("solutions", []),
                 "PoC": cve_detail.get("PoC", []),
                 "match_reason": result.get("reason", ""),
             })
@@ -246,8 +246,7 @@ def get_cve_file_path(cve_id: str) -> Path:
 
 def get_cve_details(cve_id: str) -> dict:
     """
-    精確讀取並解析單一 CVE JSON 資料 (完全相容 CVE 資料範例 JSON 結構)，
-    提煉出 AI Agent 滲透評估與漏洞利用所需的所有核心資料欄位。
+    精確讀取並解析單一 CVE JSON 資料，提煉出 AI Agent 滲透評估所需的所有核心資料結構 (Dict)
     """
     cve_id = cve_id.strip().upper()
     
@@ -259,11 +258,6 @@ def get_cve_details(cve_id: str) -> dict:
         "score": "N/A",
         "cvss": "N/A",
         "cwes": [],
-        "vendors": [],
-        "products": [],
-        "affected": [],
-        "solutions": [],
-        "tags": [],
         "PoC": [],
         "error": None
     }
@@ -282,95 +276,61 @@ def get_cve_details(cve_id: str) -> dict:
             data = json.load(f)
             
         cve_data["found"] = True
-        cve_data["cve_id"] = data.get("cveID") or data.get("cve_id") or cve_id
         
-        # 1. 解析 Descriptions (描述)
+        # 1. 提煉 Description (描述)
         raw_desc = data.get("descriptions", "No description provided.")
         if isinstance(raw_desc, list):
             desc_items = []
             for d in raw_desc:
                 if isinstance(d, dict):
                     desc_items.append(d.get("value", str(d)))
-                elif isinstance(d, str):
-                    desc_items.append(d)
+                else:
+                    desc_items.append(str(d))
             raw_desc = " ".join(desc_items)
-        elif not isinstance(raw_desc, str):
-            raw_desc = str(raw_desc)
         cve_data["description"] = raw_desc
         
-        # 2. 解析 CWEs / ProblemTypes
+        # 2. 提煉 CWEs
         cwes = []
         for problem in data.get("problemTypes", []):
             if isinstance(problem, dict):
-                descs = problem.get("descriptions", {})
+                descs = problem.get("descriptions", [])
                 if isinstance(descs, list):
                     for d in descs:
-                        if isinstance(d, dict):
-                            cwe_id_val = d.get("cweID") or d.get("cweId")
-                            cwe_desc = d.get("description", "")
-                            if cwe_id_val and cwe_id_val.lower() != "n/a":
-                                cwes.append(f"{cwe_id_val} ({cwe_desc})" if cwe_desc else cwe_id_val)
-                            elif cwe_desc and cwe_desc.lower() != "n/a":
-                                cwes.append(cwe_desc)
-                elif isinstance(descs, dict):
-                    cwe_id_val = descs.get("cweID") or descs.get("cweId")
-                    cwe_desc = descs.get("description", "")
-                    if cwe_id_val and cwe_id_val.lower() != "n/a":
-                        cwes.append(f"{cwe_id_val} ({cwe_desc})" if cwe_desc else cwe_id_val)
-                    elif cwe_desc and cwe_desc.lower() != "n/a":
-                        cwes.append(cwe_desc)
+                        if isinstance(d, dict) and d.get("cweID"):
+                            cwes.append(d.get("cweID"))
+                elif isinstance(descs, dict) and descs.get("cweID"):
+                    cwes.append(descs.get("cweID"))
         cve_data["cwes"] = list(set(cwes))
         
-        # 3. 解析 Metrics (CVSS 分數與 Severity)
+        # 3. 提煉 CVSS 分數與 Severity
         metrics_list = data.get("metrics", [])
         if isinstance(metrics_list, list):
             for item in metrics_list:
-                if isinstance(item, dict):
-                    score = str(item.get("baseScore") or item.get("score") or "")
-                    severity = str(item.get("baseSeverity") or item.get("severity") or "")
-                    if score or severity:
-                        cve_data["score"] = score if score else "N/A"
-                        cve_data["cvss"] = cve_data["score"]
-                        cve_data["severity"] = severity if severity else "UNKNOWN"
-                        break
+                if isinstance(item, dict) and ("baseScore" in item or "cvssV3" in item or "cvssV2" in item):
+                    score = str(item.get("baseScore") or item.get("score") or "N/A")
+                    severity = str(item.get("baseSeverity") or item.get("severity") or "UNKNOWN")
+                    cve_data["score"] = score
+                    cve_data["cvss"] = score
+                    cve_data["severity"] = severity
+                    break
         elif isinstance(metrics_list, dict):
             cve_data["score"] = str(metrics_list.get("baseScore", "N/A"))
             cve_data["cvss"] = cve_data["score"]
             cve_data["severity"] = str(metrics_list.get("baseSeverity", "UNKNOWN"))
 
-        # 4. 解析 Vendors, Products, Affected, Solutions, Tags
-        cve_data["vendors"] = [v for v in data.get("vendors", []) if v and v != "n/a"]
-        cve_data["products"] = [p for p in data.get("products", []) if p and p != "n/a"]
-        cve_data["affected"] = data.get("affected", [])
-        cve_data["solutions"] = [s for s in data.get("solutions", []) if s]
-        cve_data["tags"] = data.get("tags", [])
-
-        # 5. 解析 PoC 資訊 (完整提取概念驗證與 Exploit 代碼/連結)
+        # 4. 提煉 PoC 資訊
         poc_list = data.get("PoC", [])
         pocs = []
         if isinstance(poc_list, list):
-            for poc_item in poc_list:
-                if isinstance(poc_item, dict):
-                    url = poc_item.get("url", "")
-                    title = poc_item.get("title", "")
-                    poc_code = poc_item.get("poc", "")
-                    pocs.append({
-                        "title": title,
-                        "url": url,
-                        "poc_code": poc_code
-                    })
-                elif isinstance(poc_item, str) and poc_item:
-                    pocs.append({
-                        "title": "Exploit Link / Script",
-                        "url": poc_item if poc_item.startswith("http") else "",
-                        "poc_code": poc_item if not poc_item.startswith("http") else ""
-                    })
+            for poc in poc_list:
+                if isinstance(poc, dict):
+                    content = poc.get("poc") or poc.get("url") or str(poc)
+                    if content:
+                        pocs.append(content)
+                elif isinstance(poc, str) and poc:
+                    pocs.append(poc)
         elif isinstance(poc_list, str) and poc_list:
-            pocs.append({
-                "title": "Exploit Link",
-                "url": poc_list if poc_list.startswith("http") else "",
-                "poc_code": poc_list if not poc_list.startswith("http") else ""
-            })
+            pocs.append(poc_list)
         cve_data["PoC"] = pocs
 
     except Exception as e:
@@ -1285,6 +1245,134 @@ if __name__ == "__main__":
     update_all_poc()
 ```
 
+### 📄 `Docker/ai/langchain/get_nvd.py`
+
+```python
+# Docker/ai/langchain/get_nvd.py
+import urllib.request
+import urllib.parse
+import json
+import ssl
+
+NVD_API_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0"
+
+def get_vulnerability_data(product_name: str, target_version: str = "") -> list:
+    """
+    透過 NVD API v2 線上查詢特定產品與版本的 CVE 漏洞資料。
+    安全處理 list/dict 解析，避免 'list indices must be integers or slices, not str' 錯誤。
+    """
+    query_str = f"{product_name} {target_version}".strip()
+    encoded_query = urllib.parse.quote(query_str)
+    url = f"{NVD_API_URL}?keywordSearch={encoded_query}"
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PentestAgent/2.0"
+    }
+
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+
+    results = []
+
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=15, context=ctx) as response:
+            if response.status != 200:
+                print(f"[!] NVD API 回應異常狀態碼: {response.status}")
+                return []
+            
+            raw_data = response.read().decode("utf-8", errors="ignore")
+            data = json.loads(raw_data)
+
+        if not isinstance(data, dict):
+            print("[!] NVD 回傳資料格式非 dict 物件")
+            return []
+
+        vulnerabilities = data.get("vulnerabilities", [])
+        if not isinstance(vulnerabilities, list):
+            print(f"[!] NVD vulnerabilities 欄位非 list 類型: {type(vulnerabilities)}")
+            return []
+
+        for item in vulnerabilities:
+            if not isinstance(item, dict):
+                continue
+            
+            cve_obj = item.get("cve", {})
+            if not isinstance(cve_obj, dict):
+                continue
+
+            cve_id = cve_obj.get("id", "N/A")
+
+            # 提煉描述
+            descriptions = cve_obj.get("descriptions", [])
+            cve_desc = "No description available."
+            if isinstance(descriptions, list):
+                for desc in descriptions:
+                    if isinstance(desc, dict) and desc.get("lang") == "en":
+                        cve_desc = desc.get("value", cve_desc)
+                        break
+                    elif isinstance(desc, dict) and "value" in desc:
+                        cve_desc = desc.get("value", cve_desc)
+
+            # 提煉 CVSS 分數與 Severity
+            metrics = cve_obj.get("metrics", {})
+            score = "N/A"
+            severity = "UNKNOWN"
+
+            if isinstance(metrics, dict):
+                metric_keys = ["cvssMetricV31", "cvssMetricV30", "cvssMetricV2"]
+                for key in metric_keys:
+                    metric_list = metrics.get(key, [])
+                    if isinstance(metric_list, list) and len(metric_list) > 0:
+                        m_item = metric_list[0]
+                        if isinstance(m_item, dict):
+                            cvss_data = m_item.get("cvssData", {})
+                            if isinstance(cvss_data, dict):
+                                score = cvss_data.get("baseScore", score)
+                                severity = cvss_data.get("baseSeverity", m_item.get("baseSeverity", severity))
+                                break
+
+            results.append({
+                "cveID": cve_id,
+                "cve_id": cve_id,
+                "description": cve_desc,
+                "score": str(score),
+                "severity": str(severity),
+                "cvss": {"score": str(score), "severity": str(severity)}
+            })
+
+    except Exception as e:
+        print(f"[!] NVD 網路請求或解析失敗: {e}")
+        return []
+
+    return results
+
+def convert_to_markdown(vuln_results: list, product_name: str, target_version: str) -> str:
+    """將漏洞查詢結果格式化為 Markdown 摘要表格與列表"""
+    if not vuln_results or not isinstance(vuln_results, list):
+        return f"（NVD 查詢結果：線上 NVD 資料庫中未找到與 `{product_name} {target_version}` 相關的已知漏洞。）"
+
+    lines = [f"### 🌐 NVD 線上漏洞檢索結果 ({product_name} {target_version})"]
+    lines.append(f"共找到 {len(vuln_results)} 筆匹配的 CVE 漏洞：\n")
+
+    for idx, item in enumerate(vuln_results[:10], 1):
+        if not isinstance(item, dict):
+            continue
+        cve_id = item.get("cveID") or item.get("cve_id", "N/A")
+        score = item.get("score", "N/A")
+        severity = item.get("severity", "UNKNOWN")
+        desc = item.get("description", "")
+        if len(desc) > 150:
+            desc = desc[:150] + "..."
+
+        lines.append(f"{idx}. **{cve_id}** [CVSS {score} - {severity}]")
+        lines.append(f"   - **描述**: {desc}")
+
+    return "\n".join(lines)
+
+```
+
 ### 📄 `Docker/ai/langchain/main.py`
 
 ```python
@@ -1297,11 +1385,12 @@ from dotenv import load_dotenv
 import util
 from config.logging import log_info
 from tools import PentestToolbox
-from tool_config import dispatch_tool
+from tool_config import dispatch_tool, get_langchain_tools
 import ai.prompt as prompt
 from ai.reasoning import ReasoningModule
 from ai.generation import GenerationModule
 from ai.parsing import ParsingModule
+from ai.task_tree import PentestTaskTree, TaskStatus
 
 load_dotenv()
 
@@ -1309,209 +1398,228 @@ TARGET_IP = os.getenv("TARGET_IP", prompt.TARGET_IP)
 
 class PentestBox:
 
-  def __init__(self):
-    self.turn = 0
-    self.current_state = 1  # 1: 資產偵察, 2: 漏洞評估/攻擊
-    self.net_tools = PentestToolbox(TARGET_IP)
+    def __init__(self, reset_memory: bool = True):
+        self.turn = 0
+        self.current_state = 1  # 1: 資產偵察, 2: 漏洞評估/攻擊
+        self.net_tools = PentestToolbox(TARGET_IP)
 
-    # 初始化三模組 Agent AI 架構
-    self.reasoning_module = ReasoningModule()
-    self.generation_module = GenerationModule()
-    self.parsing_module = ParsingModule()
+        # 一開始初始化 / 重置 Share Memory (LangChain State Store)
+        self.memory_store = util.LangChainPentestMemory(target_ip=TARGET_IP, reset=reset_memory)
 
-    self.share_memory = {
-        "device_information": {
-            "device_type": "IoT Device",
-            "target_ip": TARGET_IP,
-        },
-        "ports": {"TCP": [], "UDP": []},
-        "tool_history": [],
-        "current_observation": prompt.INITIAL_USER_PROMPT,
-    }
-    log_info.share_memory(self.share_memory)
+        # 初始化三模組 Agent AI 架構
+        self.reasoning_module = ReasoningModule()
+        self.generation_module = GenerationModule()
+        self.parsing_module = ParsingModule()
 
-  def exec_tool(self, tool_obj):
-    if not tool_obj or not isinstance(tool_obj, dict):
-      return "（無可執行的指令或工具）"
-
-    tool_name = tool_obj.get("tool_name", tool_obj.get("name", "")).strip()
-    argument = tool_obj.get("argument", tool_obj.get("parameters", {}))
-
-    cmd_str = ""
-    if isinstance(argument, dict):
-      cmd_str = argument.get(
-          "cmd",
-          argument.get(
-              "command",
-              argument.get(
-                  "url", argument.get("query", ""))
-              ),
-          )
-    elif isinstance(argument, str):
-      cmd_str = argument
-    cmd_str = cmd_str.strip() if isinstance(cmd_str, str) else ""
-
-    # 1. Nmap 阻擋防護
-    if "nmap" in cmd_str.lower() or "nmap" in tool_name.lower():
-      log_info.warn("⚠️ [ExecTool 攔截] AI 試圖呼叫 Nmap，已自動阻擋！")
-      return (
-          "（系統提示：Nmap 基礎掃描已由固定 SOP"
-          " 完成。請勿重複使用 Nmap，請改用 analyze_web_page, rag_search_cve"
-          " 等專用工具。）"
-      )
-
-    # 2. 針對 rag_search_cve 重複呼叫的【硬性自動轉譯降級 (Hard Fallback)】
-    if tool_name == "rag_search_cve":
-      query_str = ""
-      if isinstance(argument, dict):
-        query_str = argument.get("query", argument.get("cmd", ""))
-      elif isinstance(argument, str):
-        query_str = argument
-      query_str = query_str.strip()
-
-      searched_queries = self.share_memory.get("searched_rag_queries", [])
-      if query_str and query_str.lower() in [q.lower() for q in searched_queries]:
-        log_info.warn(
-            f"⚠️ [Hard Fallback 觸發] AI 嘗試對已檢索過的關鍵字 `{query_str}`"
-            " 再次呼叫 rag_search_cve！程式自動轉譯降級為 analyze_web_page。"
-        )
-        tool_obj["tool_name"] = "analyze_web_page"
-        tool_obj["argument"] = {"url": f"http://{TARGET_IP}"}
-        tool_name = "analyze_web_page"
-        argument = {"url": f"http://{TARGET_IP}"}
-
-    # 3. Overseer Repetition Guard
-    history = self.share_memory.get("tool_history", [])
-    recent_cmds = []
-    for h in history[-4:]:
-      t_arg = h.get("tool", {}).get("argument", {})
-      if isinstance(t_arg, dict):
-        recent_cmds.append(
-            t_arg.get("cmd", t_arg.get("url", t_arg.get("query", "")))
-        )
-      elif isinstance(t_arg, str):
-        recent_cmds.append(t_arg)
-
-    if cmd_str and recent_cmds.count(cmd_str) >= 2:
-      log_info.warn(f"⚠️ [Overseer 攔截] 檢測到重複指令: `{cmd_str}`")
-      return (
-          f"（系統提示 [Overseer Guard]：指令 `{cmd_str}` 已重複執行多次且無新進展！"
-          "請勿再重複發送該命令。請換用其他工具（如 analyze_web_page 頁面分析），或若已掌握資訊，請設定 'stage_completed': true"
-          " 結束本階段。）"
-      )
-
-    return dispatch_tool(self.net_tools, tool_name, argument)
-
-  def run_state_1_sop(self):
-    log_info.info(
-        "⚙️ [固定 SOP] 開始執行第一階段全 TCP 與 UDP 自動探測..."
-    )
-    self.net_tools.nmap_scan_tcp()
-    self.net_tools.nmap_scan_udp()
-
-  def pentestPipeLine(self):
-    log_info.info("🚀 PentestGPT 三模組架構滲透測試 Agent 正式啟動！")
-    self.run_state_1_sop()
-
-    last_observation = prompt.INITIAL_USER_PROMPT
-
-    while True:
-      try:
-        self.turn += 1
-        log_info.info(
-            f"\n=== 第 {self.turn} 輪 | 階段 {self.current_state} (PentestGPT"
-            " 三模組解耦推演) ==="
-        )
-
-        # -------------------------------------------------------------
-        # 步驟 1: 推理與決策模組 (Reasoning Module)
-        # -------------------------------------------------------------
-        self.share_memory = util.get_share_memory()
-        reasoning_res = self.reasoning_module.run(
-            self.share_memory, last_observation
-        )
-
-        decided_task = reasoning_res.get("decided_task", "分析目標開放服務")
-        stage_completed = reasoning_res.get("stage_completed", False)
-
-        if stage_completed:
-          log_info.info("✅ Reasoning 模組判定當前階段任務已完成！")
-          if self.current_state == 1:
-            self.current_state = 2
-            log_info.info(
-                "進入第二階段：漏洞評估與攻擊利用 (Stage 2 Exploit)"
-            )
-            last_observation = (
-                "進入第二階段漏洞評估，請檢視 Share Memory 中 web_footprints"
-                " 及 ports，展開針對性驗證。"
-            )
-            continue
-          else:
-            log_info.info("🏁 全流程滲透測試安全結束。")
-            break
-
-        # -------------------------------------------------------------
-        # 步驟 2: 指令生成模組 (Generation Module)
-        # -------------------------------------------------------------
-        tool_obj = self.generation_module.run(
-            decided_task, self.share_memory
-        )
-
-        # -------------------------------------------------------------
-        # 步驟 3: 工具執行 (Execution)
-        # -------------------------------------------------------------
-        raw_exec_log = self.exec_tool(tool_obj)
-        log_info.info(
-            f"⚙️ 原始執行結果 Log (長度 {len(raw_exec_log)} 字元):\n{raw_exec_log[:200]}..."
-        )
-
-        # -------------------------------------------------------------
-        # 步驟 4: 結果解析與壓縮模組 (Parsing Module)
-        # -------------------------------------------------------------
-        tool_name = tool_obj.get("tool_name", "execute_cli")
-        argument = tool_obj.get("argument", {})
-        parsed_res = self.parsing_module.run(
-            tool_name, argument, raw_exec_log
-        )
-
-        condensed_summary = parsed_res.get("summary", raw_exec_log[:300])
-
-        # -------------------------------------------------------------
-        # 步驟 5: 狀態持久化 (Update Memory)
-        # -------------------------------------------------------------
-        tool_history_entry = {
-            "turn": self.turn,
-            "decided_task": decided_task,
-            "tool": tool_obj,
-            "parsed_summary": condensed_summary,
-            "extracted_facts": parsed_res.get("extracted_facts", {}),
-        }
+        # 封裝 LangChain StructuredTools 供擴充元件使用
+        self.langchain_tools = get_langchain_tools(self.net_tools)
 
         self.share_memory = util.get_share_memory()
-        if "tool_history" not in self.share_memory:
-          self.share_memory["tool_history"] = []
-        self.share_memory["tool_history"].append(tool_history_entry)
-
-        # 將壓縮後的摘要記錄給下一輪 Reasoning 模組
-        last_observation = (
-            f"【上輪執行任務】: {decided_task}\n"
-            f"【呼叫工具】: {tool_name}\n"
-            f"【提煉摘要】: {condensed_summary}"
-        )
-        self.share_memory["current_observation"] = last_observation
-
+        log_info.info("✨ [Share Memory] 成功在程式啟動一開始完成初始化！")
         log_info.share_memory(self.share_memory)
 
-      except KeyboardInterrupt:
-        log_info.warn("\n[!] 使用者手動中斷滲透測試。")
-        break
-      except Exception as e:
-        log_info.error(f"三模組管道執行異常: {e}")
-        break
+    def exec_tool(self, tool_obj):
+        if not tool_obj or not isinstance(tool_obj, dict):
+            return "（無可執行的指令或工具）"
+
+        tool_name = tool_obj.get("tool_name", tool_obj.get("name", "")).strip()
+        argument = tool_obj.get("argument", tool_obj.get("parameters", {}))
+
+        cmd_str = ""
+        if isinstance(argument, dict):
+            cmd_str = argument.get(
+                "cmd",
+                argument.get(
+                    "command",
+                    argument.get("url", argument.get("query", ""))
+                )
+            )
+        elif isinstance(argument, str):
+            cmd_str = argument
+        cmd_str = cmd_str.strip() if isinstance(cmd_str, str) else ""
+
+        # 1. Nmap 阻擋防護
+        if "nmap" in cmd_str.lower() or "nmap" in tool_name.lower():
+            log_info.warn("⚠️ [ExecTool 攔截] AI 試圖呼叫 Nmap，已自動阻擋！")
+            return (
+                "（系統提示：Nmap 基礎掃描已由固定 SOP"
+                " 完成。請勿重複使用 Nmap，請改用 analyze_web_page, rag_search_cve"
+                " 等專用工具。）"
+            )
+
+        # 2. 針對 rag_search_cve 重複呼叫的【硬性自動轉譯降級 (Hard Fallback)】
+        if tool_name == "rag_search_cve":
+            query_str = ""
+            if isinstance(argument, dict):
+                query_str = argument.get("query", argument.get("cmd", ""))
+            elif isinstance(argument, str):
+                query_str = argument
+            query_str = query_str.strip()
+
+            searched_queries = self.share_memory.get("searched_rag_queries", [])
+            if query_str and query_str.lower() in [q.lower() for q in searched_queries]:
+                log_info.warn(
+                    f"⚠️ [Hard Fallback 觸發] AI 嘗試對已檢索過的關鍵字 `{query_str}`"
+                    " 再次呼叫 rag_search_cve！程式自動轉譯降級為 analyze_web_page。"
+                )
+                tool_obj["tool_name"] = "analyze_web_page"
+                tool_obj["argument"] = {"url": f"http://{TARGET_IP}"}
+                tool_name = "analyze_web_page"
+                argument = {"url": f"http://{TARGET_IP}"}
+
+        # 3. Overseer Repetition Guard
+        history = self.share_memory.get("tool_history", [])
+        recent_cmds = []
+        for h in history[-4:]:
+            t_arg = h.get("tool", {}).get("argument", {})
+            if isinstance(t_arg, dict):
+                recent_cmds.append(
+                    t_arg.get("cmd", t_arg.get("url", t_arg.get("query", "")))
+                )
+            elif isinstance(t_arg, str):
+                recent_cmds.append(t_arg)
+
+        if cmd_str and recent_cmds.count(cmd_str) >= 2:
+            log_info.warn(f"⚠️ [Overseer 攔截] 檢測到重複指令: `{cmd_str}`")
+            return (
+                f"（系統提示 [Overseer Guard]：指令 `{cmd_str}` 已重複執行多次且無新進展！"
+                "請勿再重複發送該命令。請換用其他工具（如 analyze_web_page 頁面分析），或若已掌握資訊，請設定 'stage_completed': true"
+                " 結束本階段。）"
+            )
+
+        return dispatch_tool(self.net_tools, tool_name, argument)
+
+    def run_state_1_sop(self):
+        log_info.info(
+            "⚙️ [固定 SOP] 開始執行第一階段全 TCP 與 UDP 自動探測..."
+        )
+        self.net_tools.nmap_scan_tcp()
+        self.net_tools.nmap_scan_udp()
+
+    def pentestPipeLine(self):
+        log_info.info("🚀 PentestGPT v2 (LangChain + EGATS + TDA) 滲透測試 Agent 正式啟動！")
+        self.run_state_1_sop()
+
+        last_observation = prompt.INITIAL_USER_PROMPT
+
+        while True:
+            try:
+                self.turn += 1
+                log_info.info(
+                    f"\n=== 第 {self.turn} 輪 | 階段 {self.current_state} (PentestGPT v2"
+                    " 三模組解耦推演) ==="
+                )
+
+                # -------------------------------------------------------------
+                # 步驟 1: 推理與決策模組 (Reasoning Module)
+                # -------------------------------------------------------------
+                self.share_memory = util.get_share_memory()
+                reasoning_res = self.reasoning_module.run(
+                    self.share_memory, last_observation
+                )
+
+                decided_task = reasoning_res.get("decided_task", "分析目標開放服務")
+                stage_completed = reasoning_res.get("stage_completed", False)
+
+                if stage_completed:
+                    log_info.info("✅ Reasoning 模組判定當前階段任務已完成！")
+                    if self.current_state == 1:
+                        self.current_state = 2
+                        log_info.info(
+                            "進入第二階段：漏洞評估與攻擊利用 (Stage 2 Exploit)"
+                        )
+                        last_observation = (
+                            "進入第二階段漏洞評估，請檢視 Share Memory 中 web_footprints"
+                            " 及 ports，展開針對性驗證。"
+                        )
+                        continue
+                    else:
+                        log_info.info("🏁 全流程滲透測試安全結束。")
+                        break
+
+                # -------------------------------------------------------------
+                # 步驟 2: 指令生成模組 (Generation Module)
+                # -------------------------------------------------------------
+                tool_obj = self.generation_module.run(
+                    decided_task, self.share_memory
+                )
+
+                # -------------------------------------------------------------
+                # 步驟 3: 工具執行 (Execution)
+                # -------------------------------------------------------------
+                raw_exec_log = self.exec_tool(tool_obj)
+                log_info.info(
+                    f"⚙️ 原始執行結果 Log (長度 {len(raw_exec_log)} 字元):\n{raw_exec_log[:200]}..."
+                )
+
+                # -------------------------------------------------------------
+                # 步驟 4: 結果解析與壓縮模組 (Parsing Module)
+                # -------------------------------------------------------------
+                tool_name = tool_obj.get("tool_name", "execute_cli")
+                argument = tool_obj.get("argument", {})
+                parsed_res = self.parsing_module.run(
+                    tool_name, argument, raw_exec_log
+                )
+
+                condensed_summary = parsed_res.get("summary", raw_exec_log[:300])
+                new_evidence = parsed_res.get("new_evidence_found", False)
+
+                # -------------------------------------------------------------
+                # 步驟 5: TDA (Task Difficulty Assessment) 嘗試反饋與 PTT 同步
+                # -------------------------------------------------------------
+                self.share_memory = util.get_share_memory()
+                if "task_tree" in self.share_memory and isinstance(self.share_memory["task_tree"], dict):
+                    try:
+                        tree = PentestTaskTree.from_dict(self.share_memory["task_tree"])
+                        active_node_id = None
+                        for nid, nd in tree.nodes.items():
+                            if nd.status in [TaskStatus.TO_DO, TaskStatus.IN_PROGRESS] and (nd.title in decided_task or decided_task in nd.title):
+                                active_node_id = nid
+                                break
+                        if not active_node_id and tree.root_ids:
+                            active_node_id = tree.root_ids[0]
+
+                        if active_node_id:
+                            tda_status = tree.record_attempt(active_node_id, success=True, new_evidence_found=new_evidence)
+                            if tda_status == TaskStatus.PRUNED:
+                                log_info.warn(f"⚠️ [TDA 自動剪枝觸發] 節點 `{active_node_id}` 連續嘗試缺乏新證據，自動剪枝避開！")
+
+                        self.share_memory["task_tree"] = tree.to_dict()
+                        util.update_share_memory(self.share_memory)
+                    except Exception as te:
+                        log_info.error(f"❌ [TDA 反饋同步失敗]: {te}")
+
+                # -------------------------------------------------------------
+                # 步驟 6: 狀態持久化 (LangChain Memory Save Context)
+                # -------------------------------------------------------------
+                self.memory_store.save_context(
+                    inputs={"decided_task": decided_task, "tool": tool_obj},
+                    outputs={
+                        "summary": condensed_summary,
+                        "extracted_facts": parsed_res.get("extracted_facts", {}),
+                        "new_evidence_found": new_evidence,
+                    }
+                )
+
+                self.share_memory = util.get_share_memory()
+                last_observation = (
+                    f"【上輪執行任務】: {decided_task}\n"
+                    f"【呼叫工具】: {tool_name}\n"
+                    f"【提煉摘要】: {condensed_summary}"
+                )
+                self.share_memory["current_observation"] = last_observation
+                log_info.share_memory(self.share_memory)
+
+            except KeyboardInterrupt:
+                log_info.warn("\n[!] 使用者手動中斷滲透測試。")
+                break
+            except Exception as e:
+                log_info.error(f"三模組管道執行異常: {e}")
+                break
 
 if __name__ == "__main__":
-  pentest = PentestBox()
-  pentest.pentestPipeLine()
+    pentest = PentestBox()
+    pentest.pentestPipeLine()
 
 ```
 
@@ -1521,125 +1629,68 @@ if __name__ == "__main__":
 # Docker/ai/langchain/tool_config.py
 
 import json
+from typing import Any, Dict, List, Optional
+from pydantic import BaseModel, Field
 from config.logging import log_info
 
 # =====================================================================
-# 三模組與 Web 分析對應的 JSON Output Schemas
+# 1. Pydantic 結構化 Schemas (LangChain & Pydantic Standard)
 # =====================================================================
 
-REASONING_RESPONSE_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "thought": {
-            "type": "string",
-            "description": "隊長分析全局 PTT 與 Share Memory 的思考過程",
-        },
-        "decided_task": {
-            "type": "string",
-            "description": "決定的下一個高階子任務描述",
-        },
-        "stage_completed": {
-            "type": "boolean",
-            "description": "當前階段任務是否已全部完成",
-        },
-    },
-    "required": ["thought", "decided_task", "stage_completed"],
-}
+class ReasoningResponse(BaseModel):
+    thought: str = Field(description="隊長分析全局 PTT 與 Share Memory 的思考過程")
+    decided_task: str = Field(description="決定的下一個高階子任務描述")
+    stage_completed: bool = Field(default=False, description="當前階段任務是否已全部完成")
 
-GENERATION_RESPONSE_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "thought": {
-            "type": "string",
-            "description": "將子任務轉換為工具/指令的思考推導 (CoT)",
-        },
-        "tool": {
-            "type": "object",
-            "properties": {
-                "tool_name": {
-                    "type": "string",
-                    "description": (
-                        "工具名稱: analyze_web_page, rag_search_cve,"
-                        " nvd_search_cve, execute_cli"
-                    ),
-                },
-                "argument": {
-                    "type": "object",
-                    "properties": {
-                        "cmd": {"type": "string", "description": "Linux CLI 指令"},
-                        "url": {"type": "string", "description": "目標網址"},
-                        "query": {"type": "string", "description": "搜尋關鍵字"},
-                    },
-                },
-            },
-            "required": ["tool_name", "argument"],
-        },
-    },
-    "required": ["thought", "tool"],
-}
+class ToolCallArgument(BaseModel):
+    cmd: Optional[str] = Field(default="", description="Linux CLI 指令")
+    url: Optional[str] = Field(default="", description="目標網址")
+    query: Optional[str] = Field(default="", description="搜尋關鍵字")
 
-PARSING_RESPONSE_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "summary": {
-            "type": "string",
-            "description": "從原始 Log 提煉出的 3-5 句精準安全摘要",
-        },
-        "extracted_facts": {
-            "type": "object",
-            "description": "從 Log 提取的結構化資訊 (如 ports, cves, urls)",
-        },
-        "status": {
-            "type": "string",
-            "description": "執行結果狀態 (success / failed / partial)",
-        },
-    },
-    "required": ["summary", "status"],
-}
+class ToolCall(BaseModel):
+    tool_name: str = Field(description="工具名稱: analyze_web_page, rag_search_cve, nvd_search_cve, execute_cli")
+    argument: ToolCallArgument = Field(default_factory=ToolCallArgument, description="工具調用參數")
 
-IOT_WEB_ANALYSIS_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "iot_vendor": {
-            "type": "object",
-            "properties": {
-                "name": {"type": "string", "description": "IoT 設備廠商名稱，例如 D-Link, Netgear"},
-                "description": {"type": "string", "description": "廠商背景與說明"}
-            },
-            "required": ["name", "description"]
-        },
-        "device_type": {
-            "type": "object",
-            "properties": {
-                "category": {"type": "string", "description": "設備種類，例如 Wireless Router, IP Camera"},
-                "description": {"type": "string", "description": "設備類型的用途說明"}
-            },
-            "required": ["category", "description"]
-        },
-        "web_pages_for_deeper_investigation": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "url": {"type": "string", "description": "頁面檔名或 URL，例如 login_real.htm, wizard_default.htm"},
-                    "description": {"type": "string", "description": "該頁面的用途、轉向機制與潛在攻擊面說明"}
-                },
-                "required": ["url", "description"]
-            }
-        },
-        "additional_notes": {
-            "type": "object",
-            "properties": {
-                "script_functionality": {"type": "string", "description": "頁面中 JavaScript 函數用途 (如 get_login_info, get_settings_xml)"},
-                "charset": {"type": "string", "description": "網頁字元集編碼，如 UTF-8"}
-            }
-        }
-    },
-    "required": ["iot_vendor", "device_type", "web_pages_for_deeper_investigation"]
-}
+class GenerationResponse(BaseModel):
+    thought: str = Field(description="將子任務轉換為工具/指令的思考推導 (CoT)")
+    tool: ToolCall = Field(description="具體工具與參數物件")
+
+class ParsingResponse(BaseModel):
+    summary: str = Field(description="從原始 Log 提煉出的 3-5 句精準安全摘要")
+    extracted_facts: Dict[str, Any] = Field(default_factory=dict, description="從 Log 提取的結構化資訊 (如 ports, cves, urls)")
+    new_evidence_found: bool = Field(default=False, description="本次執行是否發現新的資產、端點或漏洞情報 (供 TDA 剪枝判斷)")
+    status: str = Field(default="success", description="執行結果狀態 (success / failed / partial)")
+
+class IoTVendorInfo(BaseModel):
+    name: str = Field(description="IoT 設備廠商名稱，例如 D-Link, Netgear")
+    description: str = Field(description="廠商背景與說明")
+
+class IoTDeviceCategory(BaseModel):
+    category: str = Field(description="設備種類，例如 Wireless Router, IP Camera")
+    description: str = Field(description="設備類型的用途說明")
+
+class WebPageInvestigation(BaseModel):
+    url: str = Field(description="頁面檔名或 URL，例如 login_real.htm, wizard_default.htm")
+    description: str = Field(description="該頁面的用途、轉向機制與潛在攻擊面說明")
+
+class AdditionalNotes(BaseModel):
+    script_functionality: Optional[str] = Field(default="", description="頁面中 JavaScript 函數用途 (如 get_login_info, get_settings_xml)")
+    charset: Optional[str] = Field(default="UTF-8", description="網頁字元集編碼，如 UTF-8")
+
+class IoTWebAnalysisResponse(BaseModel):
+    iot_vendor: IoTVendorInfo
+    device_type: IoTDeviceCategory
+    web_pages_for_deeper_investigation: List[WebPageInvestigation]
+    additional_notes: Optional[AdditionalNotes] = None
+
+# 相容舊版 Dict Schema，供原本 call_ollama_json 呼叫使用
+REASONING_RESPONSE_SCHEMA = ReasoningResponse.model_json_schema()
+GENERATION_RESPONSE_SCHEMA = GenerationResponse.model_json_schema()
+PARSING_RESPONSE_SCHEMA = ParsingResponse.model_json_schema()
+IOT_WEB_ANALYSIS_SCHEMA = IoTWebAnalysisResponse.model_json_schema()
 
 # =====================================================================
-# 工具調用分發器 (Tool Dispatcher)
+# 2. LangChain 工具調用分發器 (LangChain Tool Dispatcher)
 # =====================================================================
 
 def dispatch_tool(toolbox_instance, tool_name: str, arguments: dict) -> str:
@@ -1648,71 +1699,90 @@ def dispatch_tool(toolbox_instance, tool_name: str, arguments: dict) -> str:
     if not tool_name:
         return "（提示：LLM 未指定任何工具名稱）"
 
+    # 使用 Pydantic 模型進行輸入參數驗證，防止類型錯亂
+    if isinstance(arguments, dict):
+        try:
+            validated_arg = ToolCallArgument(**arguments)
+        except Exception:
+            validated_arg = ToolCallArgument(cmd=str(arguments))
+    else:
+        validated_arg = ToolCallArgument(cmd=str(arguments))
+
     if tool_name == "analyze_web_page":
-        log_info.info("🛠️ [Tool Dispatcher] 觸發 analyze_web_page...")
-        url = ""
-        if isinstance(arguments, dict):
-            url = arguments.get("url", arguments.get("cmd", ""))
-        elif isinstance(arguments, str):
-            url = arguments
-        return toolbox_instance.analyze_web_page(url)
+        log_info.info("🛠️ [LangChain Dispatcher] 觸發 analyze_web_page...")
+        target_url = validated_arg.url or validated_arg.cmd or ""
+        return toolbox_instance.analyze_web_page(target_url)
 
     elif tool_name == "rag_search_cve":
-        log_info.info("🛠️ [Tool Dispatcher] 觸發 rag_search_cve...")
-        query = ""
-        if isinstance(arguments, dict):
-            query = arguments.get("query", arguments.get("cmd", ""))
-        elif isinstance(arguments, str):
-            query = arguments
-        return toolbox_instance.rag_search_cve(query)
+        log_info.info("🛠️ [LangChain Dispatcher] 觸發 rag_search_cve...")
+        target_query = validated_arg.query or validated_arg.cmd or ""
+        return toolbox_instance.rag_search_cve(target_query)
 
     elif tool_name == "nvd_search_cve":
-        log_info.info("🛠️ [Tool Dispatcher] 觸發 nvd_search_cve...")
-        query = ""
-        if isinstance(arguments, dict):
-            query = arguments.get("query", arguments.get("cmd", ""))
-        elif isinstance(arguments, str):
-            query = arguments
-        return toolbox_instance.nvd_search_cve(query)
+        log_info.info("🛠️ [LangChain Dispatcher] 觸發 nvd_search_cve...")
+        target_query = validated_arg.query or validated_arg.cmd or ""
+        return toolbox_instance.nvd_search_cve(target_query)
 
     elif tool_name in ["execute_cli", "command"]:
-        if isinstance(arguments, dict):
-            cmd_str = arguments.get("cmd", arguments.get("command", ""))
-        elif isinstance(arguments, str):
-            cmd_str = arguments
-        else:
-            cmd_str = str(arguments)
-
-        cmd_str = cmd_str.strip() if isinstance(cmd_str, str) else ""
-
+        cmd_str = validated_arg.cmd or ""
         if not cmd_str:
             return "（提示：未提供具體的 CLI 指令）"
         return toolbox_instance.execute_cli(cmd_str)
 
     elif tool_name == "nmap_scan_tcp":
-        log_info.info("🛠️ [Tool Dispatcher] 觸發 nmap_scan_tcp...")
+        log_info.info("🛠️ [LangChain Dispatcher] 觸發 nmap_scan_tcp...")
         tcp_results = toolbox_instance.nmap_scan_tcp()
         return f"（TCP 掃描完成，已獲取 {len(tcp_results)} 個開放埠，結果已更新至 Share Memory）"
 
     elif tool_name == "nmap_scan_udp":
-        log_info.info("🛠️ [Tool Dispatcher] 觸發 nmap_scan_udp...")
+        log_info.info("🛠️ [LangChain Dispatcher] 觸發 nmap_scan_udp...")
         udp_results = toolbox_instance.nmap_scan_udp()
         return f"（UDP 掃描完成，已獲取 {len(udp_results)} 個開放埠，結果已更新至 Share Memory）"
 
     else:
-        log_info.warn(f"⚠️ [Tool Dispatcher] 未知的工具名稱: {tool_name}，嘗試回退至 CLI 命令執行...")
-        if isinstance(arguments, dict):
-            cmd_str = arguments.get("cmd", "")
-        elif isinstance(arguments, str):
-            cmd_str = arguments
-        else:
-            cmd_str = str(arguments)
-
-        cmd_str = cmd_str.strip() if isinstance(cmd_str, str) else ""
-
+        log_info.warn(f"⚠️ [LangChain Dispatcher] 未知的工具名稱: {tool_name}，嘗試回退至 CLI 命令執行...")
+        cmd_str = validated_arg.cmd or str(arguments)
         if cmd_str:
             return toolbox_instance.execute_cli(cmd_str)
         return f"（錯誤：無法識別的工具名稱 `{tool_name}`）"
+
+# =====================================================================
+# 3. LangChain Structured Tools 封裝工廠
+# =====================================================================
+
+def get_langchain_tools(toolbox_instance) -> List[Any]:
+    """
+    將 PentestToolbox 方法轉換為 LangChain 官方 StructuredTool 物件
+    """
+    try:
+        from langchain_core.tools import StructuredTool
+
+        tools = [
+            StructuredTool.from_function(
+                func=toolbox_instance.analyze_web_page,
+                name="analyze_web_page",
+                description="分析 Web 頁面 HTML、表單欄位、隱藏敏感 URL 與 IoT 資產類型",
+            ),
+            StructuredTool.from_function(
+                func=toolbox_instance.rag_search_cve,
+                name="rag_search_cve",
+                description="本地 FAISS 向量資料庫檢索 CVE 與 PoC 腳本",
+            ),
+            StructuredTool.from_function(
+                func=toolbox_instance.nvd_search_cve,
+                name="nvd_search_cve",
+                description="線上 NVD API 查詢最新 CVE 與 CVSS 評分",
+            ),
+            StructuredTool.from_function(
+                func=toolbox_instance.execute_cli,
+                name="execute_cli",
+                description="執行具體 Linux CLI 滲透測試指令與 PoC 驗證腳本",
+            ),
+        ]
+        return tools
+    except ImportError:
+        log_info.warn("langchain_core 未安裝，跳過 StructuredTool 封裝")
+        return []
 
 ```
 
@@ -2305,124 +2375,203 @@ class PentestToolbox:
 import json
 import os
 from pathlib import Path
+from typing import Any, Dict, List
 
 def get_current_folder_path() -> Path:
-  return Path(__file__).resolve().parent
+    return Path(__file__).resolve().parent
 
 def read_json(path: Path) -> dict:
-  try:
-    with open(path, "r", encoding="utf-8") as f:
-      return json.load(f)
-  except (FileNotFoundError, json.JSONDecodeError):
-    return {}
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
 
 def write_json(path: Path, data: dict) -> bool:
-  try:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-      json.dump(data, f, ensure_ascii=False, indent=4)
-    return True
-  except Exception as e:
-    print(f"[❌ 檔案寫入失敗] 路徑 {path} 異常: {e}")
-    return False
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
+        return True
+    except Exception as e:
+        print(f"[❌ 檔案寫入失敗] 路徑 {path} 異常: {e}")
+        return False
 
 folder = get_current_folder_path()
 share_memory_file = folder / "data" / "share memory" / "share memory.json"
 udp_cache_file = folder / "data" / "UDP.json"
 
 def update_share_memory(data: dict):
-  write_json(share_memory_file, data)
+    write_json(share_memory_file, data)
 
 def get_share_memory() -> dict:
-  return read_json(share_memory_file)
+    return read_json(share_memory_file)
+
+def init_share_memory(target_ip: str = "192.168.0.1", force_reset: bool = True) -> dict:
+    """
+    一開始初始化 / 重置 Share Memory 的結構化基礎狀態
+    """
+    initial_data = {
+        "device_information": {
+            "device_type": "IoT Device",
+            "target_ip": target_ip,
+        },
+        "ports": {"TCP": [], "UDP": []},
+        "web_footprints": {},
+        "searched_rag_queries": [],
+        "cves": [],
+        "tool_history": [],
+        "current_observation": "滲透測試任務啟動。",
+    }
+    if force_reset or not get_share_memory():
+        update_share_memory(initial_data)
+        return initial_data
+    return get_share_memory()
 
 def get_udp_cache() -> list:
-  data = read_json(udp_cache_file)
-  if isinstance(data, dict) and "UDP" in data and isinstance(data["UDP"], list):
-    return data["UDP"]
-  return []
+    data = read_json(udp_cache_file)
+    if isinstance(data, dict) and "UDP" in data and isinstance(data["UDP"], list):
+        return data["UDP"]
+    return []
 
 def update_udp_cache(udp_list: list):
-  write_json(udp_cache_file, {"UDP": udp_list})
+    write_json(udp_cache_file, {"UDP": udp_list})
+
+# =====================================================================
+# LangChain State & Memory Subsystem (Pentest Memory Wrapper)
+# =====================================================================
+
+class LangChainPentestMemory:
+    """
+    符合 LangChain 記憶體介面規範的滲透測試狀態記憶體管理器 (State Store)。
+    封裝 share_memory.json，維護資產、漏洞、工具歷史與 PTT Task Tree 的全域持久化狀態。
+    """
+
+    def __init__(self, target_ip: str = "192.168.0.1", reset: bool = True):
+        self.target_ip = target_ip
+        self.memory_path = share_memory_file
+        self.reset_memory(reset=reset)
+
+    def reset_memory(self, reset: bool = True) -> dict:
+        return init_share_memory(target_ip=self.target_ip, force_reset=reset)
+
+    def _ensure_init(self):
+        init_share_memory(target_ip=self.target_ip, force_reset=False)
+
+    def load_memory_variables(self, inputs: Dict[str, Any] = None) -> Dict[str, Any]:
+        """LangChain 標準 BaseMemory 介面：載入當前記憶體狀態變數"""
+        data = get_share_memory()
+        return {
+            "share_memory": data,
+            "ports": data.get("ports", {}),
+            "web_footprints": data.get("web_footprints", {}),
+            "searched_rag_queries": data.get("searched_rag_queries", []),
+            "cves": data.get("cves", []),
+            "tool_history": data.get("tool_history", []),
+            "current_observation": data.get("current_observation", ""),
+        }
+
+    def save_context(self, inputs: Dict[str, Any], outputs: Dict[str, Any]):
+        """LangChain 標準 BaseMemory 介面：寫入並更新最新互動上下文"""
+        data = get_share_memory()
+        if "tool_history" not in data:
+            data["tool_history"] = []
+
+        history_entry = {
+            "decided_task": inputs.get("decided_task", ""),
+            "tool": inputs.get("tool", {}),
+            "parsed_summary": outputs.get("summary", ""),
+            "extracted_facts": outputs.get("extracted_facts", {}),
+            "new_evidence_found": outputs.get("new_evidence_found", False),
+        }
+        data["tool_history"].append(history_entry)
+        data["current_observation"] = f"【上輪執行任務】: {inputs.get('decided_task', '')}\n【提煉摘要】: {outputs.get('summary', '')}"
+
+        update_share_memory(data)
+
+    def clear(self):
+        """清空記憶體重置為初始狀態"""
+        self.reset_memory(reset=True)
 
 ```
 
 ### 📄 `Docker/ai/langchain/config/logging.py`
 
 ```python
+# Docker/ai/langchain/config/logging.py
+import os
+import json
 import requests
+import util
 
-url = "http://localhost:8000/api/pentest/send_log"
-session = requests.Session()
+# 從環境變數讀取 FastAPI 端點，預設指向 /api/pentest/send_log
+FASTAPI_LOG_URL = os.getenv("FASTAPI_LOG_URL", "http://localhost:8000/api/pentest/send_log")
+ENABLE_FASTAPI_LOGGING = os.getenv("ENABLE_FASTAPI_LOGGING", "true").lower() in ("true", "1", "yes")
 
 class log_info:
-    """
-    Level 說明:
-    0 = INFO (顯示所有日誌：INFO, TOOL, PROMPT, RESPONSE, WARN, ERROR)
-    1 = WARN (僅顯示 WARN, ERROR)
-    2 = ERROR (僅顯示 ERROR)
-    """
     level = 0
 
     @staticmethod
-    def _send(log_content, log_type):
+    def _send_to_fastapi(log_type: str, log_content: str):
+        """
+        將 Log 以 JSON 格式傳送給 FastAPI 端點 (/api/pentest/send_log)
+        Payload 結構嚴格對應 CommandPayload (包含 log 與 log_type)
+        """
+        if not ENABLE_FASTAPI_LOGGING or not FASTAPI_LOG_URL:
+            return
+
         payload = {
             "log": str(log_content),
-            "log_type": log_type
+            "log_type": str(log_type)
         }
+
         try:
-            response = session.post(url, json=payload, timeout=2)
-            if response.status_code != 200:
-                print(f"[API WARN] 伺服器回應狀態碼: {response.status_code}")
-        except requests.exceptions.ConnectionError:
-            print(f"[API ERROR] 無法連線到伺服器 ({url})")
-        except Exception as e:
-            print(f"[API ERROR] 發送日誌失敗: {e}")
+            # 設置短 timeout (2.0s)，確保連線異常時不卡住 Agent 的滲透推演
+            requests.post(FASTAPI_LOG_URL, json=payload, timeout=2.0)
+        except Exception:
+            # 後端未啟動或連線失敗時靜默忽略
+            pass
 
     @staticmethod
     def info(log):
-        if log_info.level <= 0:
+        if log_info.level >= 0:
             print(f"[INFO    ] {log}")
-            log_info._send(log, "INFO")
+            log_info._send_to_fastapi("info", log)
 
     @staticmethod
-    def tool(tool_name):
+    def tool(tool):
         if log_info.level <= 0:
-            print(f"\n[TOOL    ] {tool_name}")
-            log_info._send(tool_name, "TOOL")
-
-    @staticmethod
-    def warn(log):
-        if log_info.level <= 1:
-            print(f"[WARN    ] {log}")
-            log_info._send(log, "WARN")
-
-    @staticmethod
-    def error(log):
-        if log_info.level <= 2:
-            print(f"[ERROR   ] {log}")
-            log_info._send(log, "ERROR")
+            print(f"[TOOL    ] {tool}")
+            log_info._send_to_fastapi("tool", tool)
 
     @staticmethod
     def AI_prompt(prompt):
         if log_info.level <= 0:
             print(f"[PROMPT  ] {prompt}")
-            log_info._send(prompt, "AI_PROMPT")
+            log_info._send_to_fastapi("ai_prompt", prompt)
 
     @staticmethod
     def AI_response(response):
         if log_info.level <= 0:
             print(f"[RESPONSE] {response}")
-            log_info._send(response, "AI_RESPONSE")
+            log_info._send_to_fastapi("ai_response", response)
+
+    @staticmethod
+    def warn(log):
+        if log_info.level <= 1:
+            print(f"[WARN    ] {log}")
+            log_info._send_to_fastapi("warn", log)
+
+    @staticmethod
+    def error(log):
+        if log_info.level <= 2:
+            print(f"[ERROR   ] {log}")
+            log_info._send_to_fastapi("error", log)
 
     @staticmethod
     def share_memory(data):
-        # 1. 若有 util，進行狀態更新
-        if "util" in globals() and hasattr(util, "update_share_memory"):
-            util.update_share_memory(data)
-
-        # 2. 靜默發送 API：不執行 print，排除在本地 Terminal 之外，僅傳給前端
-        log_info._send(data, "SHARE_MEMORY")
+        util.update_share_memory(data)
+        log_info._send_to_fastapi("share_memory", json.dumps(data, ensure_ascii=False))
 
 ```
 
@@ -2432,7 +2581,7 @@ class log_info:
 # Docker/ai/langchain/ai/generation.py
 
 import json
-from ai.ollama import call_ollama_json
+from ai.ollama import call_ollama_json, GENERATION_MODEL
 from ai.prompt import GENERATION_SYSTEM_PROMPT
 from config.logging import log_info
 from tool_config import GENERATION_RESPONSE_SCHEMA
@@ -2448,7 +2597,7 @@ class GenerationModule:
         pass
 
     def run(self, decided_task: str, share_memory: dict) -> dict:
-        log_info.info(f"⚡ [Generation Module] 正在將子任務轉譯為工具命令: `{decided_task}`")
+        log_info.info(f"⚡ [Generation Module] 正在將子任務轉譯為工具命令 (Model: {GENERATION_MODEL}): `{decided_task}`")
 
         target_ip = share_memory.get("device_information", {}).get("target_ip", "192.168.0.1")
         ports = share_memory.get("ports", {})
@@ -2465,7 +2614,7 @@ class GenerationModule:
             f"絕對不能對【已搜尋過的 RAG 關鍵字】再次產生 rag_search_cve 工具呼叫！"
         )
 
-        response = call_ollama_json(GENERATION_SYSTEM_PROMPT, user_payload, GENERATION_RESPONSE_SCHEMA)
+        response = call_ollama_json(GENERATION_SYSTEM_PROMPT, user_payload, GENERATION_RESPONSE_SCHEMA, model_name=GENERATION_MODEL)
 
         if not response or not isinstance(response, dict) or "tool" not in response:
             log_info.warn("⚠️ Generation 模組生成失敗，備用預設 CLI 指令")
@@ -2497,6 +2646,18 @@ import re
 import sys
 from dotenv import load_dotenv
 
+# LangChain Imports (支援原生 LangChain Community / LangChain Core 鏈與提示詞模版)
+try:
+    from langchain_community.chat_models import ChatOllama
+    from langchain_core.prompts import ChatPromptTemplate
+    from langchain_core.output_parsers import JsonOutputParser
+    LANGCHAIN_AVAILABLE = True
+except ImportError:
+    LANGCHAIN_AVAILABLE = False
+    ChatOllama = None
+    ChatPromptTemplate = None
+    JsonOutputParser = None
+
 try:
     from ollama import Client
 except ImportError:
@@ -2510,7 +2671,12 @@ import util
 load_dotenv()
 
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:14b")
+
+# 多模型配置 Support (支援 RTX 4050 6GB 及不同模組能力最佳化)
+DEFAULT_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:14b")
+REASONING_MODEL = os.getenv("REASONING_MODEL", os.getenv("OLLAMA_MODEL", "qwen2.5:14b"))
+GENERATION_MODEL = os.getenv("GENERATION_MODEL", os.getenv("OLLAMA_MODEL", "qwen2.5-coder:7b"))
+PARSING_MODEL = os.getenv("PARSING_MODEL", os.getenv("OLLAMA_MODEL", "qwen2.5:3b"))
 
 def get_ollama_client():
     if Client is None:
@@ -2518,7 +2684,7 @@ def get_ollama_client():
         return None
     try:
         client = Client(host=OLLAMA_HOST)
-        log_info.info(f"Ollama Client 初始化成功 (Host: {OLLAMA_HOST}, Model: {OLLAMA_MODEL})")
+        log_info.info(f"Ollama Client 初始化成功 (Host: {OLLAMA_HOST})")
         return client
     except Exception as e:
         log_info.error(f"無法初始化 Ollama 客戶端: {e}")
@@ -2526,19 +2692,60 @@ def get_ollama_client():
 
 ollama_client = get_ollama_client()
 
-def call_ollama_json(system_prompt: str, user_content: str, response_schema: dict) -> dict:
+def create_langchain_chat_model(model_name: str, temperature: float = 0.0):
     """
-    通用 Ollama JSON 結構化呼叫函式
+    建立 LangChain ChatOllama 物件
     """
+    if not LANGCHAIN_AVAILABLE or ChatOllama is None:
+        return None
+    try:
+        return ChatOllama(
+            base_url=OLLAMA_HOST,
+            model=model_name,
+            temperature=temperature,
+            format="json"
+        )
+    except Exception as e:
+        log_info.error(f"無法建立 LangChain ChatOllama 模型 ({model_name}): {e}")
+        return None
+
+def call_ollama_json(system_prompt: str, user_content: str, response_schema: dict, model_name: str = None) -> dict:
+    """
+    LangChain LCEL 鏈優先呼叫與 Ollama Native Client 備用相容呼叫
+    """
+    target_model = model_name or DEFAULT_MODEL
+    log_info.AI_prompt(f"[Model: {target_model}] System Prompt:\n{system_prompt[:250]}...\nUser Content:\n{user_content[:350]}...")
+
+    # 1. 嘗試使用 LangChain ChatOllama + LCEL 鏈執行
+    if LANGCHAIN_AVAILABLE:
+        try:
+            lc_llm = create_langchain_chat_model(target_model)
+            if lc_llm:
+                prompt_template = ChatPromptTemplate.from_messages([
+                    ("system", "{system_prompt}"),
+                    ("user", "{user_content}")
+                ])
+                chain = prompt_template | lc_llm | JsonOutputParser()
+                parsed_res = chain.invoke({
+                    "system_prompt": system_prompt,
+                    "user_content": user_content
+                })
+
+                if isinstance(parsed_res, dict):
+                    log_info.info("🔗 [LangChain Chain] 成功透過 LangChain LCEL 鏈取得並解析 JSON 回應！")
+                    log_info.AI_response(json.dumps(parsed_res, ensure_ascii=False))
+                    return parsed_res
+        except Exception as lce:
+            log_info.warn(f"⚠️ [LangChain LCEL 呼叫跳過]: {lce}，切換至 Ollama 原生客戶端處理。")
+
+    # 2. Ollama 原生 Client 備用回退方案
     if ollama_client is None:
         log_info.error("Ollama Client 未就緒，無法呼叫 LLM。")
         return {}
 
-    log_info.AI_prompt(f"[System Prompt]:\n{system_prompt}\n[User Content]:\n{user_content[:500]}...")
-
     try:
         response = ollama_client.chat(
-            model=OLLAMA_MODEL,
+            model=target_model,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_content},
@@ -2564,7 +2771,7 @@ def call_ollama_json(system_prompt: str, user_content: str, response_schema: dic
         log_info.error(f"LLM 回應 JSON 解析失敗: {e}，原始輸出: {raw_content[:200]}")
         return {}
     except Exception as e:
-        log_info.error(f"呼叫 Ollama 發生未知例外: {e}")
+        log_info.error(f"呼叫 Ollama 模型 ({target_model}) 發生未知例外: {e}")
         return {}
 
 ```
@@ -2575,7 +2782,7 @@ def call_ollama_json(system_prompt: str, user_content: str, response_schema: dic
 # Docker/ai/langchain/ai/parsing.py
 
 import json
-from ai.ollama import call_ollama_json
+from ai.ollama import call_ollama_json, PARSING_MODEL
 from ai.prompt import PARSING_SYSTEM_PROMPT
 from config.logging import log_info
 from tool_config import PARSING_RESPONSE_SCHEMA
@@ -2585,20 +2792,21 @@ class ParsingModule:
     3. 結果解析與壓縮模組 (Parsing Module)
     - 職責：消化 Nmap、Nikto、Web 抓包、RAG 檢索等龐大冗長 (數百至數千行) 的工具輸出 Log。
     - 提煉核心安全特徵 (Condensed Information) 與結構化數據，去除垃圾訊息。
-    - 避免原始數千行 Log 塞爆 Reasoning 模組的 Prompt Context。
+    - 判定是否產出新證據 (new_evidence_found)，反饋給 Task Difficulty Assessment (TDA) 進行動態剪枝。
     """
 
     def __init__(self):
         pass
 
     def run(self, tool_name: str, argument: dict, raw_output: str) -> dict:
-        log_info.info(f"🔍 [Parsing Module] 正在解析並壓縮工具 `{tool_name}` 的執行結果 (長度: {len(raw_output)} 字元)...")
+        log_info.info(f"🔍 [Parsing Module] 正在解析與壓縮工具 `{tool_name}` 的執行結果 (Model: {PARSING_MODEL}, 長度: {len(raw_output)} 字元)...")
 
         # 若輸出較短且明顯為系統提示，進行快速輕量處理
         if len(raw_output) < 300 and "系統提示" in raw_output:
             return {
                 "summary": raw_output.strip(),
                 "extracted_facts": {},
+                "new_evidence_found": False,
                 "status": "notice"
             }
 
@@ -2609,10 +2817,10 @@ class ParsingModule:
             f"【執行的工具】: {tool_name}\n"
             f"【工具參數】: {json.dumps(argument, ensure_ascii=False)}\n"
             f"【原始輸出 Log (Raw Output)】:\n{input_log_chunk}\n\n"
-            f"請過濾雜訊，提煉 3-5 句精準的安全摘要 (summary)，並結構化提取關鍵特徵 (extracted_facts)。"
+            f"請過濾雜訊，提煉 3-5 句精準的安全摘要 (summary)，提取關鍵特徵 (extracted_facts)，並標註本次是否發現新證據 (new_evidence_found)。"
         )
 
-        response = call_ollama_json(PARSING_SYSTEM_PROMPT, user_payload, PARSING_RESPONSE_SCHEMA)
+        response = call_ollama_json(PARSING_SYSTEM_PROMPT, user_payload, PARSING_RESPONSE_SCHEMA, model_name=PARSING_MODEL)
 
         if not response or not isinstance(response, dict) or "summary" not in response:
             log_info.warn("⚠️ Parsing 模組解析失敗，採用自動截斷回退方案")
@@ -2620,10 +2828,11 @@ class ParsingModule:
             response = {
                 "summary": f"工具 {tool_name} 執行完成。部分輸出：{short_summary}",
                 "extracted_facts": {},
+                "new_evidence_found": len(raw_output) > 200 and "錯誤" not in raw_output,
                 "status": "success"
             }
 
-        log_info.info(f"📝 [Parsing 提煉摘要]: {response.get('summary')}")
+        log_info.info(f"📝 [Parsing 提煉摘要]: {response.get('summary')} | 新證據: {response.get('new_evidence_found')}")
         return response
 
 ```
@@ -2640,50 +2849,50 @@ INITIAL_USER_PROMPT = f"""
 目標 IP: {TARGET_IP}
 目前狀況：系統 SOP 已完成全 TCP/UDP 埠基礎預探測。
 
-請讀取共享記憶體 (Share Memory) 中的開埠資訊，開始對開放服務進行深入列舉與分析。
+請讀取共享記憶體 (Share Memory) 中的開埠資訊與資產狀態，開始對開放服務進行深入列舉、漏洞檢索與驗證。
 """
 
 # =====================================================================
-# 1. 推理與決策模組 (Reasoning Module) Prompt
+# 1. 推理與決策模組 (Reasoning Module) Prompt (PentestGPT v2 EGATS & TDA)
 # =====================================================================
-REASONING_SYSTEM_PROMPT = f"""你是一名頂尖的滲透測試隊長 (Lead Pentester / Reasoning Module)。
-你的核心職責是管理「滲透測試任務樹 (Pentesting Task Tree, PTT)」，維護總體攻擊戰略，並決定下一個最具價值的子任務。
+REASONING_SYSTEM_PROMPT = f"""你是一名頂尖的自動化滲透測試隊長 (Lead Pentester / Reasoning Module)，負責驅動 PentestGPT v2 架構。
+你的核心職責是管理「證據引導攻擊樹 (Evidence-Guided Attack Tree, EGATS)」，維護全域攻擊戰略，並根據任務難度評估 (TDA) 進行動態分支選擇與剪枝。
 
-【你的職責】
-1. 審視當前的 PTT 任務樹狀態與 Share Memory 中的所有安全情報（開放 Port、服務版本、IoT 廠商與設備類型、Web 腳印、隱藏頁面與敏感端點、已找到的 CVE 漏洞與 PoC 腳本）。
-2. 更新 PTT 中的任務節點狀態（標記標題、執行結果與狀態：to_do / in_progress / completed / failed）。
-3. 評估所有可行的攻擊路徑，選出「下一個應該執行的高價值子任務 (decided_task)」。
-4. 你只負責「高階決策與戰略規劃」，不要產生具體的 CLI 指令或程式碼參數（這部分由 Generation 模組處理）。
+【一、角色與能力邊界】
+1. 你只負責高階決策與戰略規劃 (`decided_task`)，絕不產生具體的 Linux 命令或工具參數。
+2. 你的決策必須完全依據 Share Memory 中的資產情報與 EGATS 證據樹。
 
-【行動規範】
-- 嚴禁重複執行已標記為 [Completed] 的任務！
-- 嚴禁對「已執行的 RAG 關鍵字」進行二次 rag_search_cve！
-- 當進行 Web 滲透時，請善加利用 `web_footprints` 中提煉出的 `iot_vendor` (廠商)、`device_type` (設備類型) 與 `web_pages_for_deeper_investigation` (例如 login_real.htm, wizard_default.htm) 發起針對性的頁面探測或驗證指令。
-- 若所有資產偵察、Web 探測與漏洞驗證已完成，請判定階段完成 (stage_completed: true)。
-- 輸出格式必須嚴格符合 JSON Schema：
-  - thought: 高階戰略分析與思考過程
-  - decided_task: 下一步要執行的具體高階子任務描述 (例如："分析 http://192.168.0.1/login_real.htm 登入機制與預設憑證" 或 "執行 PoC 驗證 CVE-2020-25686 漏洞")
-  - stage_completed: 布林值，當前階段是否完成
+【二、EGATS 證據樹與 TDA 動態剪枝規範】
+1. **優先推進有高價值證據支撐的分支**：例如發現的敏感 Web 端點 (`login_real.htm`, `wizard_default.htm`)、含有已知 PoC 的 CVE 項目。
+2. **嚴禁選擇標記為 [Completed] 或 [Pruned] 的任務**：已被標記為 `[Pruned / 剪枝避開]` 的分支代表多次嘗試均無新證據產出，必須果斷切換至其他候選分支。
+3. **嚴禁重複搜尋**：絕不能對「已執行的 RAG 關鍵字」再次生成 `rag_search_cve` 任務。
+
+【三、階段轉銜規則】
+- 若當前開放服務的資產列舉與已知 CVE 的驗證均已完成或遭 TDA 剪枝避開，請設定 `stage_completed: true` 結束本階段。
+
+【四、輸出 JSON Schema 格式】
+- thought: 高階戰略分析、EGATS 證據權重評估與 TDA 剪枝說明
+- decided_task: 下一步要執行的具體高階子任務描述 (例如："分析 Port 80 Web 登入頁面 login_real.htm" 或 "發射 PoC 驗證 CVE-2020-25686")
+- stage_completed: 布林值，當前階段任務是否已全部完成
 """
 
 # =====================================================================
 # 2. 指令生成模組 (Generation Module) Prompt
 # =====================================================================
-GENERATION_SYSTEM_PROMPT = f"""你是一名精通 Linux 滲透測試工具的資深安全工程師 (Generation Module)。
+GENERATION_SYSTEM_PROMPT = f"""你是一名精通 Linux 滲透測試工具與漏洞利用的資深安全工程師 (Generation Module)。
 你的職責是接收 Reasoning 模組傳來的「高階子任務 (decided_task)」，將其轉譯為精準、可執行的工具呼叫或 CLI 命令。
 
-【可用工具庫 (Available Tools)】
-1. analyze_web_page: 分析 Web 頁面 HTML、表單欄位與敏感 URL，自動提煉 IoT 廠商、設備類型與可調查頁面 (參數: url)
+【一、可用工具庫 (Available Tools)】
+1. analyze_web_page: 分析 Web 頁面 HTML 結構、表單欄位、JavaScript 與敏感 URL (參數: url)
 2. rag_search_cve: 本地向量資料庫檢索完整 CVE 漏洞、詳細描述與 PoC 腳本 (參數: query, 例如 "dnsmasq 2.41")
 3. nvd_search_cve: 線上 NVD API 查詢最新 CVE 與 CVSS (參數: query)
-4. execute_cli: 執行具體 Linux CLI 滲透指令或驗證 PoC 腳本 (參數: cmd, 例如 "curl -I http://192.168.0.1/login_real.htm", "nc -vn 192.168.0.1 80")
+4. execute_cli: 執行具體 Linux CLI 滲透指令或驗證 PoC 腳本 (參數: cmd, 例如 "curl -i http://192.168.0.1/login_real.htm")
 
-【生成原則 (CoT)】
+【二、生成原則與負面約束 (CoT & Negative Constraints)】
 1. 先思考該任務需要呼叫哪個工具或哪一條 CLI 指令。
 2. 絕不能對「已搜尋過的 RAG 關鍵字」再次產生 rag_search_cve 工具呼叫！
-3. 若子任務要求測試特定的 Web 頁面 (如 login_real.htm)，請產生對應的 analyze_web_page 或 execute_cli (如 curl 命令)。
-4. 確保參數精確符合目標 IP ({TARGET_IP}) 與真實服務。
-5. 輸出必須嚴格符合 JSON Schema:
+3. 確保參數精確符合目標 IP ({TARGET_IP}) 與真實服務。
+4. 輸出必須嚴格符合 JSON Schema:
    - thought: Chain-of-Thought 思考過程 (為什麼選這個工具/命令)
    - tool:
      - tool_name: 工具名稱 (analyze_web_page, rag_search_cve, nvd_search_cve, execute_cli)
@@ -2691,24 +2900,21 @@ GENERATION_SYSTEM_PROMPT = f"""你是一名精通 Linux 滲透測試工具的資
 """
 
 # =====================================================================
-# 3. 結果解析與壓縮模組 (Parsing Module) Prompt
+# 3. 結果解析與壓縮模組 (Parsing Module) Prompt (IoT 安全情資專用)
 # =====================================================================
 PARSING_SYSTEM_PROMPT = """你是一名專門負責日誌過濾與安全情報提煉的數據解析專家 (Parsing Module)。
-滲透測試工具輸出的 Log 通常長達數百至數千行，包含大量冗餘文字。你的任務是從工具執行結果中「提煉出最關鍵的安全特徵與結論」。
+滲透測試工具輸出的 Log 通常長達數百至數千行，包含大量冗餘文字。你的任務是從工具執行結果中「提煉出最關鍵的安全特徵與結論」，並判斷本次執行是否產出了「新證據 (new_evidence_found)」。
 
-【解析重點】
-1. 關鍵資產資訊：開放 Port、服務名稱、精確軟體版本號 (如 OpenSSH 7.6p1, Apache 2.4.18)。
-2. Web 特徵：IoT 廠商、設備類型、表單 Action 網址、Input 欄位名稱 (如 username, password)、HTTP Header、隱藏目錄/重定向頁面 (如 login_real.htm, wizard_default.htm)。
+【一、解析重點與關鍵特徵】
+1. 資產與設備資訊：廠商名稱 (如 D-Link)、設備類型 (如 Wireless Router)、精確軟體版本號 (如 dnsmasq 2.41)。
+2. Web 特徵與端點：表單 Action 網址、Input 欄位 (如 username, password)、重定向與敏感頁面 (如 login_real.htm, wizard_default.htm)、隱藏 API。
 3. 漏洞與 PoC 資訊：CVE 編號、CVSS 分數、可用的 Exploit/PoC 腳本載荷。
-4. 執行狀態：命令成功/失敗原因、HTTP 回應碼 (200, 403, 500)、錯誤提示。
 
-【輸出要求】
-1. 將龐大的 Log 壓縮為 3-5 句精準的自然語言摘要 (summary)，去除無用垃圾資訊。
-2. 提取關鍵特徵值 (extracted_facts)，例如新的開放 Port、發現的表單點、漏洞 ID 等。
-3. 輸出必須嚴格符合 JSON Schema:
-   - summary: 提煉後的高價值安全結論摘要
-   - extracted_facts: 結構化提取的關鍵特徵
-   - status: "success", "failed", 或 "partial"
+【二、輸出 JSON Schema 格式】
+- summary: 將龐大 Log 壓縮為 3-5 句精準的安全摘要
+- extracted_facts: 結構化提取的關鍵特徵物件 (如 vendor, device_type, endpoints, cves)
+- new_evidence_found: 布林值，本次執行是否發現了任何先前未已知的新資產、新網頁端點或新漏洞情報
+- status: "success", "failed", 或 "notice"
 """
 
 ```
@@ -2719,7 +2925,7 @@ PARSING_SYSTEM_PROMPT = """你是一名專門負責日誌過濾與安全情報�
 # Docker/ai/langchain/ai/reasoning.py
 
 import json
-from ai.ollama import call_ollama_json
+from ai.ollama import call_ollama_json, REASONING_MODEL
 from ai.prompt import REASONING_SYSTEM_PROMPT
 from ai.task_tree import PentestTaskTree
 from config.logging import log_info
@@ -2729,8 +2935,8 @@ import util
 class ReasoningModule:
     """
     1. 推理與決策模組 (Reasoning Module)
-    - 職責：維護總體 Pentesting Task Tree (PTT) 狀態與高階戰略規劃。
-    - 不存儲具體 CLI 命令或冗長工具 Log，避免 Context 污染。
+    - 職責：維護總體 Pentesting Task Tree (PTT) 狀態與 EGATS / TDA 高階戰略規劃。
+    - 獨立 LLM Session，不存儲具體 CLI 命令或冗長工具 Log，避免 Context 污染。
     - 產出下一步的高階子任務 (decided_task)。
     """
 
@@ -2738,18 +2944,20 @@ class ReasoningModule:
         pass
 
     def run(self, share_memory: dict, last_observation: str = "") -> dict:
-        log_info.info("🧠 [Reasoning Module] 正在評估 PTT 任務樹與全域戰略...")
+        log_info.info(f"🧠 [Reasoning Module] 正在評估 EGATS 證據樹與 TDA 全域戰略 (Model: {REASONING_MODEL})...")
 
-        # 1. 確保並渲染 PTT Task Tree 視圖
+        # 1. 確保並渲染 PTT Task Tree 視圖與 EGATS 策略選單
         if "task_tree" in share_memory and isinstance(share_memory["task_tree"], dict):
             tree = PentestTaskTree.from_dict(share_memory["task_tree"])
             tree_text = tree.render_tree()
+            egats_candidates = tree.get_egats_candidate_branches()
         else:
             target_ip = share_memory.get("device_information", {}).get("target_ip", "")
             tree = PentestTaskTree(target_ip=target_ip)
             share_memory["task_tree"] = tree.to_dict()
             util.update_share_memory(share_memory)
             tree_text = tree.render_tree()
+            egats_candidates = tree.get_egats_candidate_branches()
 
         searched_queries = share_memory.get("searched_rag_queries", [])
         cves_list = share_memory.get("cves", [])
@@ -2763,23 +2971,27 @@ class ReasoningModule:
 
         # 2. 構建 Reasoning Prompt Payload
         user_payload = (
-            f"=== 滲透測試現狀報告 ===\n"
+            f"=== 滲透測試現狀與 EGATS 證據報告 ===\n"
             f"【最新觀察與執行結果 (Condensed Observation)】:\n{last_observation}\n\n"
-            f"【當前任務樹 (PTT)】:\n{tree_text}\n\n"
+            f"【當前任務樹狀態 (EGATS & TDA Tree)】:\n{tree_text}\n\n"
+            f"【EGATS 候選分支選單】:\n"
+            f"- 可推進的候選分支 (Active To-Do): {json.dumps(egats_candidates.get('active_candidates', []), ensure_ascii=False)}\n"
+            f"- 已完成的分支 (Completed): {json.dumps(egats_candidates.get('completed_branches', []), ensure_ascii=False)}\n"
+            f"- TDA 剪枝避開的分支 (Pruned / Failed): {json.dumps(egats_candidates.get('pruned_branches', []), ensure_ascii=False)}\n\n"
             f"【共享記憶體資產狀態 (Share Memory)】:\n"
             f"- 開放端口: {json.dumps(share_memory.get('ports', {}), ensure_ascii=False)}\n"
             f"- Web 腳印資訊 (含 IoT 廠商、設備種類與可深入調查頁面): {json.dumps(web_footprints, ensure_ascii=False, indent=2)}\n"
             f"- 已執行的 RAG 檢索關鍵字: {json.dumps(searched_queries, ensure_ascii=False)}\n"
             f"- 已檢索出的 CVE 與 PoC 列表 (共 {len(cves_list)} 筆): {json.dumps(all_cve_ids, ensure_ascii=False)}\n\n"
             f"【🚨 決策限制與注意事項】:\n"
-            f"1. 嚴禁重複執行已被標記為 [Completed] 的任務！\n"
+            f"1. 嚴禁重複執行已被標記為 [Completed] 或 [Pruned] 的任務！\n"
             f"2. 嚴禁選擇已出現在「已執行的 RAG 檢索關鍵字」中的關鍵字進行二次 rag_search_cve！\n"
-            f"3. 當進行 Web 頁面探測時，請優先參考 web_footprints 中的 `web_pages_for_deeper_investigation` (例如 login_real.htm, wizard_default.htm) 或對應表單介面進行針對性攻擊或測試。\n"
+            f"3. 當進行 Web 頁面探測時，請優先參考 web_footprints 中的 `web_pages_for_deeper_investigation` (例如 login_real.htm, wizard_default.htm) 或對應表單介面進行針對性測試。\n"
             f"4. 若已知 CVE 中包含 PoC，可直接下達驗證該 PoC 漏洞的子任務；若所有開放服務與 CVE 均已分析與驗證完成，請設定 stage_completed: true。\n\n"
             f"請評估當前進度，更新 PTT 戰略，並輸出下一步決定的高階子任務 (decided_task)。"
         )
 
-        response = call_ollama_json(REASONING_SYSTEM_PROMPT, user_payload, REASONING_RESPONSE_SCHEMA)
+        response = call_ollama_json(REASONING_SYSTEM_PROMPT, user_payload, REASONING_RESPONSE_SCHEMA, model_name=REASONING_MODEL)
 
         if not response or not isinstance(response, dict):
             log_info.warn("⚠️ Reasoning 回應無效，採用預設預備任務")
@@ -2810,6 +3022,7 @@ class TaskStatus(str, Enum):
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
     FAILED = "failed"
+    PRUNED = "pruned"  # TDA / EGATS: 自動動態剪枝 (Task Difficulty Index 超限)
 
 class TaskType(str, Enum):
     RECON = "recon"
@@ -2837,6 +3050,9 @@ class TaskNode:
         status: TaskStatus = TaskStatus.TO_DO,
         description: str = "",
         result: str = "",
+        attempts_count: int = 0,
+        tdi_score: float = 0.0,
+        evidence_ids: Optional[List[str]] = None,
     ):
         self.node_id = _clean_str_id(node_id) or str(uuid.uuid4())[:8]
         self.title = str(title)
@@ -2850,6 +3066,11 @@ class TaskNode:
         self.description = str(description) if description else ""
         self.result = str(result) if result else ""
         self.children_ids: List[str] = []
+        
+        # PentestGPT v2 TDA & EGATS 欄位
+        self.attempts_count = int(attempts_count)
+        self.tdi_score = float(tdi_score)  # Task Difficulty Index (0.0 ~ 1.0)
+        self.evidence_ids = evidence_ids if isinstance(evidence_ids, list) else []
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -2861,6 +3082,9 @@ class TaskNode:
             "description": self.description,
             "result": self.result,
             "children_ids": self.children_ids,
+            "attempts_count": self.attempts_count,
+            "tdi_score": self.tdi_score,
+            "evidence_ids": self.evidence_ids,
         }
 
     @classmethod
@@ -2873,6 +3097,9 @@ class TaskNode:
             status=TaskStatus(data.get("status", "to_do")),
             description=data.get("description", ""),
             result=data.get("result", ""),
+            attempts_count=data.get("attempts_count", 0),
+            tdi_score=data.get("tdi_score", 0.0),
+            evidence_ids=data.get("evidence_ids", []),
         )
         raw_children = data.get("children_ids", [])
         if isinstance(raw_children, list):
@@ -2939,6 +3166,33 @@ class PentestTaskTree:
 
         return node
 
+    def record_attempt(self, node_id: Any, success: bool = True, new_evidence_found: bool = False) -> TaskStatus:
+        """
+        PentestGPT v2 TDA (Task Difficulty Assessment) 核心機制:
+        記錄節點執行嘗試次數與新證據產出。若連續嘗試 >= 3 次且未有新證據產出，自動判定該攻擊路徑無效並進行剪枝 (Pruning)。
+        """
+        clean_id = _clean_str_id(node_id)
+        if not clean_id or clean_id not in self.nodes:
+            return TaskStatus.TO_DO
+
+        node = self.nodes[clean_id]
+        node.attempts_count += 1
+
+        if new_evidence_found:
+            node.tdi_score = max(0.0, node.tdi_score - 0.3)
+            if success:
+                node.status = TaskStatus.COMPLETED
+        else:
+            node.tdi_score = min(1.0, node.tdi_score + 0.35)
+            # 若連續嘗試 3 次以上且沒有產出新證據 -> TDA 自動剪枝
+            if node.attempts_count >= 3:
+                node.status = TaskStatus.PRUNED
+                node.result = f"TDA 動態剪枝: 連續 {node.attempts_count} 次嘗試無新證據 (TDI={node.tdi_score:.2f})"
+            elif not success:
+                node.status = TaskStatus.FAILED
+
+        return node.status
+
     def update_task_status(
         self,
         node_id: Any,
@@ -2962,8 +3216,8 @@ class PentestTaskTree:
         return True
 
     def render_tree(self) -> str:
-        """將 Task Tree 轉為純文字樹狀圖"""
-        lines = ["=== 【Pentesting Task Tree - 滲透測試任務樹】 ==="]
+        """將 Task Tree 轉為純文字樹狀圖 (含 TDA 剪枝與嘗試統計)"""
+        lines = ["=== 【Pentesting Task Tree - EGATS & TDA 樹狀圖】 ==="]
 
         def _render_node(node_id_val: Any, prefix: str = "", is_last: bool = True):
             clean_id = _clean_str_id(node_id_val)
@@ -2978,11 +3232,13 @@ class PentestTaskTree:
                 TaskStatus.IN_PROGRESS: "[In-Progress]",
                 TaskStatus.COMPLETED: "[Completed]",
                 TaskStatus.FAILED: "[Failed]",
+                TaskStatus.PRUNED: "[Pruned / 剪枝避開]",
             }.get(node.status, "[Unknown]")
 
             branch = "└── " if is_last else "├── "
+            attempts_info = f" (嘗試: {node.attempts_count}次, TDI: {node.tdi_score:.1f})" if node.attempts_count > 0 else ""
             line = (
-                f"{prefix}{branch}{status_text} (ID: {node.node_id}) {node.title}"
+                f"{prefix}{branch}{status_text} (ID: {node.node_id}) {node.title}{attempts_info}"
             )
 
             if node.result:
@@ -3005,6 +3261,26 @@ class PentestTaskTree:
             _render_node(root_id, "", idx == root_count - 1)
 
         return "\n".join(lines)
+
+    def get_egats_candidate_branches(self) -> Dict[str, List[str]]:
+        """回傳 EGATS 候選分支視圖，明確標註可執行候選與已剪枝/已完成分支"""
+        active_candidates = []
+        completed_branches = []
+        pruned_branches = []
+
+        for nid, node in self.nodes.items():
+            if node.status == TaskStatus.TO_DO:
+                active_candidates.append(f"[{node.node_id}] {node.title}")
+            elif node.status == TaskStatus.COMPLETED:
+                completed_branches.append(f"[{node.node_id}] {node.title}")
+            elif node.status in [TaskStatus.PRUNED, TaskStatus.FAILED]:
+                pruned_branches.append(f"[{node.node_id}] {node.title} (原因: {node.result})")
+
+        return {
+            "active_candidates": active_candidates,
+            "completed_branches": completed_branches,
+            "pruned_branches": pruned_branches,
+        }
 
     def to_dict(self) -> Dict[str, Any]:
         return {
